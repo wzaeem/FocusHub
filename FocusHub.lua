@@ -1748,21 +1748,20 @@ if tabs[1] then
 end
 
 print("Universal Script loaded with 500+ features across 10 tabs!")
--- Part 5/5: Keybind System, Notifications, Additional Features & Final Polish
--- Adds keybinds, notifications, feature counter, and more.
-
--- ==================== GLOBAL VARIABLES ====================
-local activeConnections = {} -- Store connections for cleanup
-local featureStates = {} -- Store toggle states
-local keybinds = {} -- Store keybind mappings
-
 -- ==================== KEYBIND SYSTEM ====================
+local keybinds = {}
 local function bindKey(featureName, keyCode, callback)
     keybinds[featureName] = {key = keyCode, callback = callback}
 end
 
 local function unbindKey(featureName)
     keybinds[featureName] = nil
+end
+
+-- Simple function to find a toggle by name (stub – you can expand as needed)
+local function findToggle(toggleName)
+    -- This is a placeholder; you could store references to all toggles in a table.
+    return function() end
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1774,12 +1773,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             bind.callback()
         end
     end
-end)
-
--- Example: bind toggle for fly
-bindKey("Fly", Enum.KeyCode.F, function()
-    local toggle = findToggle("Fly") -- We'll need to store references
-    if toggle then toggle() end
 end)
 
 -- ==================== NOTIFICATION SYSTEM ====================
@@ -1838,17 +1831,6 @@ local function notify(title, message, duration)
     end)
     
     game:GetService("Debris"):AddItem(notifFrame, duration)
-end
-
--- Override toggle creation to add notifications
-local originalCreateToggle = createToggle
-createToggle = function(parent, text, yPos, callback)
-    local toggleFrame, toggleBtn, indicator, state = originalCreateToggle(parent, text, yPos, function(val)
-        featureStates[text] = val
-        if callback then callback(val) end
-        notify(text, val and "Enabled" or "Disabled", 1.5)
-    end)
-    return toggleFrame
 end
 
 -- ==================== FEATURE COUNTER ====================
@@ -2035,9 +2017,11 @@ for _, tab in ipairs(tabs) do
     addHoverEffect(tab.btn)
 end
 
--- ==================== KEYBIND UI (Optional) ====================
--- Add a keybind button next to each toggle (if needed)
--- This would be complex, but for simplicity we skip.
+-- ==================== KEYBIND TOGGLE (optional) ====================
+bindKey("Fly", Enum.KeyCode.F, function()
+    local toggle = findToggle("Fly")
+    if toggle then toggle() end
+end)
 
 -- ==================== SCRIPT END ====================
 print("Universal Script fully loaded with " .. finalCount .. " features!")
