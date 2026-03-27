@@ -1,2027 +1,611 @@
---[[
-    Universal Script - Sleek UI Framework (Part 1/5)
-    Modern design with blur, rounded corners, smooth animations.
-    Supports all games.
-]]
-
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-
--- Create ScreenGui with blur effect
-local gui = Instance.new("ScreenGui")
-gui.Name = "UniversalScript"
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.ResetOnSpawn = false
-gui.Parent = CoreGui
-
--- Background blur (optional, requires enabled blur effect)
-local blur = Instance.new("BlurEffect")
-blur.Size = 0
-blur.Parent = game:GetService("Lighting")
-
--- Main container
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 500, 0, 600)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-mainFrame.BackgroundTransparency = 0.15
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.Parent = gui
-
--- Rounded corners
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = mainFrame
-
--- Shadow effect (simple)
-local shadow = Instance.new("Frame")
-shadow.Name = "Shadow"
-shadow.Size = UDim2.new(1, 20, 1, 20)
-shadow.Position = UDim2.new(0, -10, 0, -10)
-shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-shadow.BackgroundTransparency = 0.7
-shadow.BorderSizePixel = 0
-shadow.ZIndex = 0
-shadow.Parent = mainFrame
-local shadowCorner = Instance.new("UICorner")
-shadowCorner.CornerRadius = UDim.new(0, 12)
-shadowCorner.Parent = shadow
-
--- Title bar
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 45)
-titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-titleBar.BackgroundTransparency = 0.2
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
-titleCorner.Parent = titleBar
-
--- Title text
-local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -100, 1, 0)
-titleText.Position = UDim2.new(0, 15, 0, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "Universal Script v2.0"
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.Font = Enum.Font.GothamBold
-titleText.TextSize = 16
-titleText.Parent = titleBar
-
--- Close button
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -40, 0, 8)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-closeBtn.BackgroundTransparency = 0.2
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18
-closeBtn.BorderSizePixel = 0
-closeBtn.Parent = titleBar
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeBtn
-
--- Minimize button
-local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 30, 0, 30)
-minBtn.Position = UDim2.new(1, -80, 0, 8)
-minBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 70)
-minBtn.BackgroundTransparency = 0.2
-minBtn.Text = "−"
-minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 20
-minBtn.BorderSizePixel = 0
-minBtn.Parent = titleBar
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
-minCorner.Parent = minBtn
-
--- Tabs container (horizontal)
-local tabsContainer = Instance.new("Frame")
-tabsContainer.Name = "TabsContainer"
-tabsContainer.Size = UDim2.new(1, 0, 0, 45)
-tabsContainer.Position = UDim2.new(0, 0, 0, 45)
-tabsContainer.BackgroundTransparency = 1
-tabsContainer.Parent = mainFrame
-
--- Content container (scrollable)
-local contentContainer = Instance.new("ScrollingFrame")
-contentContainer.Name = "ContentContainer"
-contentContainer.Size = UDim2.new(1, 0, 1, -90)
-contentContainer.Position = UDim2.new(0, 0, 0, 90)
-contentContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-contentContainer.BackgroundTransparency = 0.2
-contentContainer.BorderSizePixel = 0
-contentContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-contentContainer.ScrollBarThickness = 5
-contentContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-contentContainer.Parent = mainFrame
-local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 8)
-contentCorner.Parent = contentContainer
-
--- Dragging functionality
-local dragging = false
-local dragStart, startPos
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-    end
-end)
-
-titleBar.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Minimize animation
-local minimized = false
-local originalSize = mainFrame.Size
-
-minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        mainFrame:TweenSize(UDim2.new(0, 500, 0, 45), "Out", "Quad", 0.3, true)
-        contentContainer.Visible = false
-        minBtn.Text = "□"
-        blur.Size = 0
-    else
-        mainFrame:TweenSize(originalSize, "Out", "Quad", 0.3, true)
-        contentContainer.Visible = true
-        minBtn.Text = "−"
-        blur.Size = 12
-    end
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    blur.Size = 0
-    gui:Destroy()
-end)
-
--- Blur effect when opened
-blur.Size = 12
-
--- Tab management
-local tabs = {}
-local currentTab = nil
-
-local function createTab(name, icon)
-    local tabBtn = Instance.new("TextButton")
-    tabBtn.Name = name.."Tab"
-    tabBtn.Size = UDim2.new(0, 110, 1, -10)
-    tabBtn.Position = UDim2.new(0, (#tabs * 115) + 5, 0, 5)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    tabBtn.BackgroundTransparency = 0.5
-    tabBtn.Text = icon .. " " .. name
-    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    tabBtn.Font = Enum.Font.GothamSemibold
-    tabBtn.TextSize = 13
-    tabBtn.BorderSizePixel = 0
-    tabBtn.Parent = tabsContainer
-    
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 8)
-    tabCorner.Parent = tabBtn
-    
-    local tabContent = Instance.new("Frame")
-    tabContent.Name = name.."Content"
-    tabContent.Size = UDim2.new(1, -20, 1, -20)
-    tabContent.Position = UDim2.new(0, 10, 0, 10)
-    tabContent.BackgroundTransparency = 1
-    tabContent.Visible = false
-    tabContent.Parent = contentContainer
-    
-    table.insert(tabs, {btn = tabBtn, content = tabContent})
-    
-    tabBtn.MouseButton1Click:Connect(function()
-        for _, tab in ipairs(tabs) do
-            tab.btn.BackgroundTransparency = 0.5
-            tab.btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-            tab.content.Visible = false
-        end
-        tabBtn.BackgroundTransparency = 0
-        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        tabContent.Visible = true
-        currentTab = name
-    end)
-    
-    return tabContent
-end
-
--- Feature registration system
-local features = {}
-local categories = {}
-
--- UI element builders
-local function createSection(parent, title, yPos)
-    local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, -20, 0, 40)
-    section.Position = UDim2.new(0, 10, 0, yPos)
-    section.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-    section.BackgroundTransparency = 0.4
-    section.BorderSizePixel = 0
-    section.Parent = parent
-    
-    local sectionCorner = Instance.new("UICorner")
-    sectionCorner.CornerRadius = UDim.new(0, 8)
-    sectionCorner.Parent = section
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -20, 1, 0)
-    titleLabel.Position = UDim2.new(0, 10, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 14
-    titleLabel.Parent = section
-    
-    return section
-end
-
-local function createToggle(parent, text, yPos, callback)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(1, -20, 0, 38)
-    toggleFrame.Position = UDim2.new(0, 10, 0, yPos)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -55, 1, 0)
-    label.Position = UDim2.new(0, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 13
-    label.Parent = toggleFrame
-    
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0, 44, 0, 26)
-    toggleBtn.Position = UDim2.new(1, -50, 0, 6)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-    toggleBtn.Text = ""
-    toggleBtn.BorderSizePixel = 0
-    toggleBtn.Parent = toggleFrame
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(1, 0)
-    toggleCorner.Parent = toggleBtn
-    
-    local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 22, 0, 22)
-    indicator.Position = UDim2.new(0, 2, 0, 2)
-    indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-    indicator.BorderSizePixel = 0
-    indicator.Parent = toggleBtn
-    
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(1, 0)
-    indicatorCorner.Parent = indicator
-    
-    local state = false
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        state = not state
-        if state then
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
-            indicator.Position = UDim2.new(1, -24, 0, 2)
-            indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-            indicator.Position = UDim2.new(0, 2, 0, 2)
-            indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-        end
-        if callback then callback(state) end
-    end)
-    
-    return toggleFrame
-end
-
-local function createSlider(parent, text, yPos, min, max, default, callback)
-    local sliderFrame = Instance.new("Frame")
-    sliderFrame.Size = UDim2.new(1, -20, 0, 60)
-    sliderFrame.Position = UDim2.new(0, 10, 0, yPos)
-    sliderFrame.BackgroundTransparency = 1
-    sliderFrame.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.Position = UDim2.new(0, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text .. ": " .. default
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 13
-    label.Parent = sliderFrame
-    
-    local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(1, 0, 0, 4)
-    bar.Position = UDim2.new(0, 0, 0, 30)
-    bar.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    bar.BorderSizePixel = 0
-    bar.Parent = sliderFrame
-    
-    local barCorner = Instance.new("UICorner")
-    barCorner.CornerRadius = UDim.new(1, 0)
-    barCorner.Parent = bar
-    
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
-    fill.BorderSizePixel = 0
-    fill.Parent = bar
-    
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(1, 0)
-    fillCorner.Parent = fill
-    
-    local handle = Instance.new("TextButton")
-    handle.Size = UDim2.new(0, 12, 0, 12)
-    handle.Position = UDim2.new((default - min) / (max - min), -6, 0, -4)
-    handle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    handle.Text = ""
-    handle.BorderSizePixel = 0
-    handle.Parent = sliderFrame
-    
-    local handleCorner = Instance.new("UICorner")
-    handleCorner.CornerRadius = UDim.new(1, 0)
-    handleCorner.Parent = handle
-    
-    local value = default
-    
-    local function update(input)
-        local pos = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-        value = min + (max - min) * pos
-        value = math.floor(value * 10) / 10
-        fill.Size = UDim2.new(pos, 0, 1, 0)
-        handle.Position = UDim2.new(pos, -6, 0, -4)
-        label.Text = text .. ": " .. value
-        if callback then callback(value) end
-    end
-    
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            update(input)
-            local connection
-            connection = UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    update(input)
-                end
-            end)
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    connection:Disconnect()
-                end
-            end)
-        end
-    end)
-    
-    return sliderFrame
-end
-
-local function createButton(parent, text, yPos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 38)
-    btn.Position = UDim2.new(0, 10, 0, yPos)
-    btn.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextSize = 13
-    btn.BorderSizePixel = 0
-    btn.Parent = parent
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(callback)
-    
-    return btn
-end
-
-local function createDropdown(parent, text, yPos, options, callback)
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, -20, 0, 45)
-    dropdownFrame.Position = UDim2.new(0, 10, 0, yPos)
-    dropdownFrame.BackgroundTransparency = 1
-    dropdownFrame.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 13
-    label.Parent = dropdownFrame
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.55, 0, 1, 0)
-    btn.Position = UDim2.new(0.45, 0, 0, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    btn.Text = options[1]
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 13
-    btn.BorderSizePixel = 0
-    btn.Parent = dropdownFrame
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
-    
-    local selected = options[1]
-    if callback then callback(selected) end
-    
-    btn.MouseButton1Click:Connect(function()
-        local list = Instance.new("Frame")
-        list.Size = UDim2.new(0.55, 0, 0, #options * 32)
-        list.Position = UDim2.new(0.45, 0, 1, 2)
-        list.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        list.BorderSizePixel = 0
-        list.ZIndex = 10
-        list.Parent = dropdownFrame
-        
-        local listCorner = Instance.new("UICorner")
-        listCorner.CornerRadius = UDim.new(0, 6)
-        listCorner.Parent = list
-        
-        for i, opt in ipairs(options) do
-            local optBtn = Instance.new("TextButton")
-            optBtn.Size = UDim2.new(1, 0, 0, 32)
-            optBtn.Position = UDim2.new(0, 0, 0, (i-1)*32)
-            optBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-            optBtn.Text = opt
-            optBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-            optBtn.Font = Enum.Font.Gotham
-            optBtn.TextSize = 13
-            optBtn.BorderSizePixel = 0
-            optBtn.ZIndex = 10
-            optBtn.Parent = list
-            
-            optBtn.MouseButton1Click:Connect(function()
-                selected = opt
-                btn.Text = opt
-                if callback then callback(selected) end
-                list:Destroy()
-            end)
-        end
-        
-        local function closeList()
-            if list then list:Destroy() end
-        end
-        
-        game:GetService("RunService").Stepped:Wait()
-        mouse.Button1Up:Connect(closeList)
-    end)
-    
-    return dropdownFrame
-end
-
--- Initialize tabs (to be created in next parts)
--- We'll create tabs in Part 2
--- Part 2/5: Creating Tabs and Populating Features
--- Continuing from Part 1, we now create the main categories and add features.
-
--- Create tabs
-local movementTab = createTab("Movement", "🏃")
-local combatTab = createTab("Combat", "⚔️")
-local visualTab = createTab("Visual", "👁️")
-local playerTab = createTab("Player", "👤")
-local worldTab = createTab("World", "🌍")
-local miscTab = createTab("Misc", "🎮")
-local settingsTab = createTab("Settings", "⚙️")
-local adminTab = createTab("Admin", "🛡️")
-local funTab = createTab("Fun", "🎉")
-local exploitTab = createTab("Exploits", "💥")
-local utilityTab = createTab("Utility", "🔧")
-
--- Track Y positions for each tab
-local movementY = 0
-local combatY = 0
-local visualY = 0
-local playerY = 0
-local worldY = 0
-local miscY = 0
-local settingsY = 0
-local adminY = 0
-local funY = 0
-local exploitY = 0
-local utilityY = 0
-
--- Helper to update canvas size after all elements
-local function updateCanvas()
-    local maxY = math.max(movementY, combatY, visualY, playerY, worldY, miscY, settingsY, adminY, funY, exploitY, utilityY)
-    contentContainer.CanvasSize = UDim2.new(0, 0, 0, maxY + 100)
-end
-
--- ==================== MOVEMENT TAB (90+ features) ====================
-local moveSection = createSection(movementTab, "Movement Modifiers", movementY)
-movementY = movementY + 45
-
--- Speed control
-local speedOptions = {16, 25, 50, 100, 200, 500, 1000}
-createDropdown(movementTab, "Walk Speed", movementY, speedOptions, function(val)
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = val
-    end
-end)
-movementY = movementY + 55
-
--- Jump power
-local jumpOptions = {50, 75, 100, 150, 200, 300, 500}
-createDropdown(movementTab, "Jump Power", movementY, jumpOptions, function(val)
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.JumpPower = val
-    end
-end)
-movementY = movementY + 55
-
--- Gravity slider
-createSlider(movementTab, "Gravity", movementY, 0, 200, 196.2, function(val)
-    workspace.Gravity = val
-end)
-movementY = movementY + 70
-
--- Noclip
-local noclipEnabled = false
-createToggle(movementTab, "Noclip", movementY, function(val)
-    noclipEnabled = val
-    if val then
-        local noclipConn
-        noclipConn = RunService.Stepped:Connect(function()
-            if noclipEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CanCollide = false
-            elseif not noclipEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CanCollide = true
-                noclipConn:Disconnect()
-            end
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- Fly
-local flying = false
-local flyConnection = nil
-createToggle(movementTab, "Fly", movementY, function(val)
-    flying = val
-    if flying then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(10000, 10000, 10000)
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
-        flyConnection = RunService.RenderStepped:Connect(function()
-            if flying and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = player.Character.HumanoidRootPart
-                if not bodyVelocity.Parent then bodyVelocity.Parent = hrp end
-                if not bodyGyro.Parent then bodyGyro.Parent = hrp end
-                local direction = Vector3.new()
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction += hrp.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction -= hrp.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction -= hrp.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction += hrp.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction += Vector3.new(0, 1, 0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction -= Vector3.new(0, 1, 0) end
-                local speed = 50
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then speed = 150 end
-                bodyVelocity.Velocity = direction * speed
-                bodyGyro.CFrame = hrp.CFrame
-                player.Character.Humanoid.PlatformStand = true
-            elseif not flying and player.Character then
-                if bodyVelocity then bodyVelocity:Destroy() end
-                if bodyGyro then bodyGyro:Destroy() end
-                if player.Character:FindFirstChild("Humanoid") then
-                    player.Character.Humanoid.PlatformStand = false
-                end
-                if flyConnection then flyConnection:Disconnect() end
-            end
-        end)
-    else
-        if flyConnection then flyConnection:Disconnect() end
-    end
-end)
-movementY = movementY + 48
-
--- Bunny hop
-local bhopEnabled = false
-createToggle(movementTab, "Bunny Hop", movementY, function(val)
-    bhopEnabled = val
-    if val then
-        local bhopConn
-        bhopConn = RunService.RenderStepped:Connect(function()
-            if bhopEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
-                local humanoid = player.Character.Humanoid
-                if humanoid.FloorMaterial ~= Enum.Material.Air and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    humanoid.Jump = true
-                end
-            end
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- Auto sprint
-createToggle(movementTab, "Auto Sprint", movementY, function(val)
-    if val then
-        local sprintConn = RunService.RenderStepped:Connect(function()
-            if val and player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid.AutoRotate = true
-            end
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- Infinite jumps
-local infJumps = false
-createToggle(movementTab, "Infinite Jumps", movementY, function(val)
-    infJumps = val
-    if val then
-        local jumpConn = UserInputService.JumpRequest:Connect(function()
-            if infJumps and player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- Teleport to mouse
-createButton(movementTab, "Teleport to Mouse", movementY, function()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local mousePos = mouse.Hit.Position
-        player.Character.HumanoidRootPart.CFrame = CFrame.new(mousePos)
-    end
-end)
-movementY = movementY + 48
-
--- Dash ability
-local dashEnabled = false
-createToggle(movementTab, "Dash (Double Tap)", movementY, function(val) dashEnabled = val end)
-movementY = movementY + 48
-
--- Spider climb
-local spiderEnabled = false
-createToggle(movementTab, "Spider Climb", movementY, function(val)
-    spiderEnabled = val
-    if val then
-        local spiderConn = RunService.RenderStepped:Connect(function()
-            if spiderEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = player.Character.HumanoidRootPart
-                local ray = Ray.new(hrp.Position, hrp.CFrame.UpVector * -2)
-                local hit = workspace:FindPartOnRay(ray, player.Character)
-                if hit then
-                    hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
-                    local climbSpeed = 30
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then hrp.Velocity += hrp.CFrame.LookVector * climbSpeed end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then hrp.Velocity -= hrp.CFrame.LookVector * climbSpeed end
-                end
-            end
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- No fall damage
-createToggle(movementTab, "No Fall Damage", movementY, function(val)
-    if val then
-        local fallConn = player.CharacterAdded:Connect(function(char)
-            local humanoid = char:WaitForChild("Humanoid")
-            humanoid.StateChanged:Connect(function(old, new)
-                if new == Enum.HumanoidStateType.FallingDown then
-                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-                end
-            end)
-        end)
-    end
-end)
-movementY = movementY + 48
-
--- Add many more movement features (80+)
-local movementFeatures = {
-    "Air Jump x5", "Wall Run", "Slope Slide", "Swim Speed x5",
-    "Step Height x3", "Anti-Stun", "Auto Walk", "Walk on Water",
-    "Walk on Lava", "Teleport to Waypoint", "Save Position", "Load Position",
-    "Custom Walk Speed Bypass", "Custom Jump Power Bypass", "Zero Gravity",
-    "Infinite Stamina", "Sprint Boost", "Crouch Speed", "Prone",
-    "Roll Dodge", "Grappling Hook", "Rocket Jump", "Explosion Jump"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ff5520">
+<title>Focus Hub</title>
+<link rel="icon" type="image/png" href="https://i.imgur.com/KxtzMhw.png">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   FOCUS HUB v1.0 — CORE STYLES
+═══════════════════════════════════════ */
+:root {
+  --acc:#ff5520; --acc2:#ff8c00; --adim:rgba(255,85,32,.16); --aglow:rgba(255,85,32,.35);
+  --bg:#07090f; --s1:#0e1018; --s2:#141622; --s3:#1c1f2e; --s4:#242838;
+  --bd:rgba(255,85,32,.2); --bd2:rgba(255,255,255,.08);
+  --t1:#f2efe9; --t2:rgba(255,255,255,.68); --t3:rgba(255,255,255,.38);
+  --green:#00ff88; --blue:#4a9eff; --red:#ff4455; --yellow:#ffd700;
+  --sbw:240px; --sbmin:62px; --hh:58px; --r:12px; --rsm:9px; --rlg:16px;
 }
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { font-size:15px; -webkit-text-size-adjust:100%; }
+body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--t1); width:100vw; height:100vh; overflow:hidden; }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,85,32,.45); border-radius:3px; }
 
-for _, feat in ipairs(movementFeatures) do
-    createToggle(movementTab, feat, movementY, function(val) end)
-    movementY = movementY + 48
-end
+#app { display:flex; width:100vw; height:100vh; overflow:hidden; }
 
--- ==================== COMBAT TAB (80+ features) ====================
-local combatSection = createSection(combatTab, "Combat Enhancements", combatY)
-combatY = combatY + 45
-
--- Auto click
-createToggle(combatTab, "Auto Click (15 CPS)", combatY, function(val)
-    if val then
-        local clickConn
-        clickConn = RunService.RenderStepped:Connect(function()
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            wait(0.066)
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-        end)
-    end
-end)
-combatY = combatY + 48
-
--- Aimbot (silent)
-createToggle(combatTab, "Aimbot (Silent)", combatY, function(val) end)
-combatY = combatY + 48
-
--- Melee reach
-createSlider(combatTab, "Melee Reach", combatY, 5, 20, 8, function(val) end)
-combatY = combatY + 70
-
--- Critical hits always
-createToggle(combatTab, "Critical Hits Always", combatY, function(val) end)
-combatY = combatY + 48
-
--- No cooldown
-createToggle(combatTab, "No Cooldown", combatY, function(val) end)
-combatY = combatY + 48
-
--- Infinite ammo
-createToggle(combatTab, "Infinite Ammo", combatY, function(val) end)
-combatY = combatY + 48
-
--- Rapid fire
-createToggle(combatTab, "Rapid Fire", combatY, function(val) end)
-combatY = combatY + 48
-
--- No recoil
-createToggle(combatTab, "No Recoil", combatY, function(val) end)
-combatY = combatY + 48
-
--- Bullet TP (teleport bullets)
-createToggle(combatTab, "Bullet Teleport", combatY, function(val) end)
-combatY = combatY + 48
-
--- Hitbox extender
-createToggle(combatTab, "Hitbox Extender", combatY, function(val) end)
-combatY = combatY + 48
-
--- Damage multiplier
-createSlider(combatTab, "Damage Multiplier", combatY, 1, 10, 1, function(val) end)
-combatY = combatY + 70
-
--- Knockback reduction
-createToggle(combatTab, "Knockback Reduction", combatY, function(val) end)
-combatY = combatY + 48
-
--- Auto parry
-createToggle(combatTab, "Auto Parry", combatY, function(val) end)
-combatY = combatY + 48
-
--- Auto block
-createToggle(combatTab, "Auto Block", combatY, function(val) end)
-combatY = combatY + 48
-
--- Stun lock
-createToggle(combatTab, "Stun Lock", combatY, function(val) end)
-combatY = combatY + 48
-
--- More combat features
-local combatFeatures = {
-    "Instant Kill (Visual)", "Kill Aura", "Team Check Aimbot", "Visible Check",
-    "Prediction", "Triggerbot", "Auto Reload", "No Spread",
-    "No Weapon Sway", "Zoom Modifier", "Crosshair Customization",
-    "Hitmarkers", "Damage Numbers", "Kill Effects", "Headshot Only",
-    "Wallbang", "ESP Aimbot", "FOV Circle", "Smooth Aimbot"
+/* ═══════════════════════════════════════
+   SIDEBAR — FIXED TOGGLE
+═══════════════════════════════════════ */
+#sb {
+  width:var(--sbw); height:100vh; flex-shrink:0;
+  background:var(--s1); border-right:1px solid var(--bd);
+  display:flex; flex-direction:column; overflow:hidden;
+  transition:width .28s cubic-bezier(.4,0,.2,1); z-index:50;
+  position:relative;
 }
+#sb.col { width:var(--sbmin); }
 
-for _, feat in ipairs(combatFeatures) do
-    createToggle(combatTab, feat, combatY, function(val) end)
-    combatY = combatY + 48
-end
-
--- ==================== VISUAL TAB (120+ features) ====================
-local visualSection = createSection(visualTab, "Visual Enhancements", visualY)
-visualY = visualY + 45
-
--- ESP toggles
-createToggle(visualTab, "ESP (Boxes)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Lines)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Names)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Health)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Distance)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Weapon)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "ESP (Skeleton)", visualY, function(val) end)
-visualY = visualY + 48
-
--- Chams
-createToggle(visualTab, "Chams (Players)", visualY, function(val) end)
-visualY = visualY + 48
-createToggle(visualTab, "Chams (Items)", visualY, function(val) end)
-visualY = visualY + 48
-
--- FOV slider
-createSlider(visualTab, "Field of View", visualY, 70, 120, 70, function(val)
-    workspace.CurrentCamera.FieldOfView = val
-end)
-visualY = visualY + 70
-
--- Fullbright
-createToggle(visualTab, "Fullbright", visualY, function(val)
-    if val then
-        _G.originalBrightness = Lighting.Brightness
-        _G.originalOutdoorAmbient = Lighting.OutdoorAmbient
-        Lighting.Brightness = 2
-        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    else
-        if _G.originalBrightness then Lighting.Brightness = _G.originalBrightness end
-        if _G.originalOutdoorAmbient then Lighting.OutdoorAmbient = _G.originalOutdoorAmbient end
-    end
-end)
-visualY = visualY + 48
-
--- No fog
-createToggle(visualTab, "No Fog", visualY, function(val)
-    if val then
-        Lighting.FogEnd = 100000
-    else
-        Lighting.FogEnd = 1000000 -- reset? better to store original
-    end
-end)
-visualY = visualY + 48
-
--- No shadows
-createToggle(visualTab, "No Shadows", visualY, function(val)
-    Lighting.GlobalShadows = not val
-end)
-visualY = visualY + 48
-
--- Wireframe mode
-createToggle(visualTab, "Wireframe Mode", visualY, function(val) end)
-visualY = visualY + 48
-
--- Rainbow character
-createToggle(visualTab, "Rainbow Character", visualY, function(val) end)
-visualY = visualY + 48
-
--- X-Ray
-createToggle(visualTab, "X-Ray (See Through Walls)", visualY, function(val) end)
-visualY = visualY + 48
-
--- Third person distance slider
-createSlider(visualTab, "Third Person Distance", visualY, 3, 20, 10, function(val)
-    workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-    -- Not fully implemented
-end)
-visualY = visualY + 70
-
--- Zoom modifier
-createSlider(visualTab, "Zoom Modifier", visualY, 0.5, 2, 1, function(val) end)
-visualY = visualY + 70
-
--- Many more visual features
-local visualFeatures = {
-    "Tracers", "Crosshair", "Hitmarkers", "Damage Numbers",
-    "Kill Effects", "Custom Skybox", "Bloom Effect", "Color Correction",
-    "Motion Blur", "Depth of Field", "FXAA Anti-Aliasing", "Sharpen",
-    "Vignette", "Chromatic Aberration", "Film Grain", "Retro Shader",
-    "Grayscale Mode", "Night Vision", "Thermal Vision", "Player Glow",
-    "Item Glow", "Tracer Effects", "Bullet Trails", "Blood Effects",
-    "No Recoil Visual", "No Spread Visual", "Zoom While Scoping", "Scope Overlay"
+/* Logo row — toggle button is INSIDE here, always visible */
+.sb-top {
+  height:var(--hh); display:flex; align-items:center;
+  border-bottom:1px solid var(--bd); flex-shrink:0; overflow:hidden;
+  gap:0;
 }
-
-for _, feat in ipairs(visualFeatures) do
-    createToggle(visualTab, feat, visualY, function(val) end)
-    visualY = visualY + 48
-end
-
--- Update canvas after this part
-updateCanvas()
--- Part 3/5: Player, World, Misc, and Settings Tabs
--- Continuing from Part 2, we add more tabs with extensive features.
-
--- ==================== PLAYER TAB (90+ features) ====================
-local playerSection = createSection(playerTab, "Player Stats", playerY)
-playerY = playerY + 45
-
--- Health slider
-createSlider(playerTab, "Health", playerY, 0, 100, 100, function(val)
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.Health = val
-    end
-end)
-playerY = playerY + 70
-
--- Heal button
-createButton(playerTab, "Heal Full", playerY, function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.Health = player.Character.Humanoid.MaxHealth
-    end
-end)
-playerY = playerY + 48
-
--- God mode
-local godMode = false
-createToggle(playerTab, "God Mode", playerY, function(val)
-    godMode = val
-    if val then
-        local godConn
-        godConn = RunService.Stepped:Connect(function()
-            if godMode and player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid.MaxHealth = math.huge
-                player.Character.Humanoid.Health = math.huge
-            elseif not godMode and player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid.MaxHealth = 100
-                godConn:Disconnect()
-            end
-        end)
-    end
-end)
-playerY = playerY + 48
-
--- Infinite energy/stamina
-createToggle(playerTab, "Infinite Energy", playerY, function(val) end)
-playerY = playerY + 48
-
--- No clip (same as movement? but we'll add anyway)
-createToggle(playerTab, "No Clip (Player Only)", playerY, function(val) end)
-playerY = playerY + 48
-
--- Invisible
-createToggle(playerTab, "Invisible", playerY, function(val)
-    if player.Character then
-        for _, part in ipairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Transparency = val and 1 or 0
-            end
-        end
-    end
-end)
-playerY = playerY + 48
-
--- Size modifier
-createSlider(playerTab, "Size Modifier", playerY, 0.5, 3, 1, function(val)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1) * val
-    end
-end)
-playerY = playerY + 70
-
--- Teleport to spawn
-createButton(playerTab, "Teleport to Spawn", playerY, function()
-    local spawn = workspace:FindFirstChild("SpawnLocation")
-    if spawn and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.CFrame = spawn.CFrame
-    end
-end)
-playerY = playerY + 48
-
--- Save/Load position
-createButton(playerTab, "Save Position", playerY, function()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        _G.savedPosition = player.Character.HumanoidRootPart.CFrame
-    end
-end)
-playerY = playerY + 48
-
-createButton(playerTab, "Load Position", playerY, function()
-    if _G.savedPosition and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.CFrame = _G.savedPosition
-    end
-end)
-playerY = playerY + 48
-
--- No name tag
-createToggle(playerTab, "No Name Tag", playerY, function(val)
-    if player.Character and player.Character:FindFirstChild("Head") then
-        local tag = player.Character.Head:FindFirstChild("BillboardGui")
-        if tag then tag.Enabled = not val end
-    end
-end)
-playerY = playerY + 48
-
--- Auto respawn
-createToggle(playerTab, "Auto Respawn", playerY, function(val)
-    if val then
-        player.CharacterAdded:Connect(function(char)
-            wait(1)
-            if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health <= 0 then
-                char.Humanoid.Health = char.Humanoid.MaxHealth
-            end
-        end)
-    end
-end)
-playerY = playerY + 48
-
--- More player features
-local playerFeatures = {
-    "Stealth Mode (Anti Detection)", "Anti-Grab", "Anti-Kill", "Custom Name",
-    "XP Boost", "Level Modifier", "Money Hack", "Item Duplication",
-    "Skill Points", "Unlock All Skills", "Max Stats", "Infinite Breath",
-    "No Temperature", "No Hunger", "No Thirst", "Water Breathing"
+/* Toggle button — sits on the LEFT of logo area, always visible */
+.sb-tog {
+  width:var(--sbmin); height:var(--hh); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  border:none; background:none; cursor:pointer;
+  transition:background .15s;
 }
-
-for _, feat in ipairs(playerFeatures) do
-    createToggle(playerTab, feat, playerY, function(val) end)
-    playerY = playerY + 48
-end
-
--- ==================== WORLD TAB (70+ features) ====================
-local worldSection = createSection(worldTab, "World Manipulation", worldY)
-worldY = worldY + 45
-
--- Time of day slider
-createSlider(worldTab, "Time of Day", worldY, 0, 24, 12, function(val)
-    Lighting.TimeOfDay = val..":00:00"
-end)
-worldY = worldY + 70
-
--- Explode all parts button
-createButton(worldTab, "Explode All Parts", worldY, function()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and v ~= player.Character then
-            local explosion = Instance.new("Explosion")
-            explosion.Position = v.Position
-            explosion.Parent = workspace
-        end
-    end
-end)
-worldY = worldY + 48
-
--- Kill all mobs
-createButton(worldTab, "Kill All Mobs", worldY, function()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= player.Character then
-            v.Humanoid.Health = 0
-        end
-    end
-end)
-worldY = worldY + 48
-
--- Destroy all vehicles
-createButton(worldTab, "Destroy All Vehicles", worldY, function()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("VehicleSeat") and v.Parent then
-            v.Parent:Destroy()
-        end
-    end
-end)
-worldY = worldY + 48
-
--- Clear items
-createButton(worldTab, "Clear All Items", worldY, function()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Tool") or v:IsA("BasePart") and v.Name:match("Item") then
-            v:Destroy()
-        end
-    end
-end)
-worldY = worldY + 48
-
--- Freeze world (stops all movement)
-local frozen = false
-createToggle(worldTab, "Freeze World", worldY, function(val)
-    frozen = val
-    if val then
-        local freezeConn
-        freezeConn = RunService.Stepped:Connect(function()
-            if frozen then
-                for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("BasePart") and v ~= player.Character then
-                        v.Velocity = Vector3.new(0,0,0)
-                        v.RotVelocity = Vector3.new(0,0,0)
-                    end
-                end
-            end
-        end)
-    end
-end)
-worldY = worldY + 48
-
--- Slow motion
-createSlider(worldTab, "Slow Motion Factor", worldY, 0.1, 1, 1, function(val)
-    RunService.RenderStepped:Connect(function()
-        RunService.Heartbeat:Wait()
-        -- Not straightforward, but this is placeholder
-    end)
-end)
-worldY = worldY + 70
-
--- No collision with environment
-createToggle(worldTab, "No Collision (World)", worldY, function(val) end)
-worldY = worldY + 48
-
--- More world features
-local worldFeatures = {
-    "Remove All NPCs", "Remove All Doors", "Remove All Barriers", "Remove All Lava",
-    "Remove All Water", "Weather Control (Rain)", "Weather Control (Clear)", "Earthquake",
-    "Rainbow World", "Infinite Yield Admin", "Teleport to Player", "Bring Player",
-    "Clone Self", "NPC Spawner", "Vehicle Spawner", "Item Spawner",
-    "Bomb Spawner", "Fire Spawner", "Wind Force", "Gravity Zone"
+.sb-tog:hover { background:var(--adim); }
+.sb-tog-logo {
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
 }
-
-for _, feat in ipairs(worldFeatures) do
-    createToggle(worldTab, feat, worldY, function(val) end)
-    worldY = worldY + 48
-end
-
--- ==================== MISC TAB (100+ features) ====================
-local miscSection = createSection(miscTab, "Miscellaneous", miscY)
-miscY = miscY + 45
-
--- Anti AFK
-local antiAFK = false
-createToggle(miscTab, "Anti AFK", miscY, function(val)
-    antiAFK = val
-    if val then
-        local afkConn
-        afkConn = RunService.RenderStepped:Connect(function()
-            if antiAFK then
-                VirtualInputManager:SendKeyEvent(true, "w", false, game)
-                wait(0.1)
-                VirtualInputManager:SendKeyEvent(false, "w", false, game)
-            end
-        end)
-    end
-end)
-miscY = miscY + 48
-
--- Rejoin game
-createButton(miscTab, "Rejoin Game", miscY, function()
-    TeleportService:Teleport(game.PlaceId, player)
-end)
-miscY = miscY + 48
-
--- Server hop
-createButton(miscTab, "Server Hop", miscY, function()
-    local servers = {}
-    -- Simple server hop: get new server via TeleportService
-    TeleportService:Teleport(game.PlaceId)
-end)
-miscY = miscY + 48
-
--- FPS boost (reduce graphics)
-createToggle(miscTab, "FPS Boost Mode", miscY, function(val)
-    if val then
-        settings().Rendering.QualityLevel = 1
-        workspace.CurrentCamera.FieldOfView = 70
-    else
-        settings().Rendering.QualityLevel = 21
-    end
-end)
-miscY = miscY + 48
-
--- Unlock FPS
-createToggle(miscTab, "Unlock FPS", miscY, function(val)
-    if val then
-        setfpscap(1000) -- not directly possible but placeholder
-    end
-end)
-miscY = miscY + 48
-
--- Low graphics mode
-createToggle(miscTab, "Low Graphics Mode", miscY, function(val)
-    if val then
-        settings().Rendering.QualityLevel = 1
-    else
-        settings().Rendering.QualityLevel = 21
-    end
-end)
-miscY = miscY + 48
-
--- Hide UI (hide this GUI)
-createToggle(miscTab, "Hide UI (GUI)", miscY, function(val)
-    mainFrame.Visible = not val
-end)
-miscY = miscY + 48
-
--- Chat spoofer
-createToggle(miscTab, "Chat Spoofer", miscY, function(val) end)
-miscY = miscY + 48
-
--- Auto farm
-createToggle(miscTab, "Auto Farm", miscY, function(val) end)
-miscY = miscY + 48
-
--- Auto collect
-createToggle(miscTab, "Auto Collect (Items)", miscY, function(val) end)
-miscY = miscY + 48
-
--- Auto quest
-createToggle(miscTab, "Auto Quest", miscY, function(val) end)
-miscY = miscY + 48
-
--- More misc features
-local miscFeatures = {
-    "Macro Recorder", "Sound Board", "Music Player", "YouTube Player",
-    "Screen Recorder", "Screenshot Mode", "Particles On Click", "Cursor Trail",
-    "FPS Counter", "Clock", "Player List", "Notification System",
-    "Hotkey Manager", "Theme Customizer", "Preset Loader", "Script Hub",
-    "Remote Spy", "Network Owner", "Dex Explorer", "Infinite Yield Integration"
+.sb-tog-logo img { width:36px; height:36px; border-radius:10px; object-fit:cover; box-shadow:0 0 14px var(--aglow); }
+.sb-tog-logo .logo-fb {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron',sans-serif; font-weight:900; font-size:18px; color:#fff;
+  box-shadow:0 0 14px var(--aglow);
 }
-
-for _, feat in ipairs(miscFeatures) do
-    createToggle(miscTab, feat, miscY, function(val) end)
-    miscY = miscY + 48
-end
-
--- ==================== SETTINGS TAB (30+ features) ====================
-local settingsSection = createSection(settingsTab, "UI & Script Settings", settingsY)
-settingsY = settingsY + 45
-
--- UI transparency
-createSlider(settingsTab, "UI Transparency", settingsY, 0, 1, 0.15, function(val)
-    mainFrame.BackgroundTransparency = val
-    titleBar.BackgroundTransparency = val * 1.5
-    contentContainer.BackgroundTransparency = val
-end)
-settingsY = settingsY + 70
-
--- UI scale
-createSlider(settingsTab, "UI Scale", settingsY, 0.6, 1.4, 1, function(val)
-    mainFrame.Size = UDim2.new(0, 500 * val, 0, 600 * val)
-    originalSize = mainFrame.Size
-    mainFrame.Position = UDim2.new(0.5, -250 * val, 0.5, -300 * val)
-end)
-settingsY = settingsY + 70
-
--- Theme dropdown
-local themes = {"Dark", "Light", "Blue", "Red", "Green", "Purple", "Orange", "Pink"}
-createDropdown(settingsTab, "Theme", settingsY, themes, function(val)
-    local colors = {
-        Dark = Color3.fromRGB(20, 20, 25),
-        Light = Color3.fromRGB(240, 240, 245),
-        Blue = Color3.fromRGB(25, 45, 70),
-        Red = Color3.fromRGB(70, 25, 25),
-        Green = Color3.fromRGB(25, 70, 25),
-        Purple = Color3.fromRGB(50, 25, 70),
-        Orange = Color3.fromRGB(70, 45, 20),
-        Pink = Color3.fromRGB(70, 30, 50)
-    }
-    mainFrame.BackgroundColor3 = colors[val] or colors.Dark
-end)
-settingsY = settingsY + 55
-
--- Keybind mode
-createToggle(settingsTab, "Enable Keybinds", settingsY, function(val)
-    _G.keybindsEnabled = val
-end)
-settingsY = settingsY + 48
-
--- Reset all settings button
-createButton(settingsTab, "Reset All Settings", settingsY, function()
-    workspace.Gravity = 196.2
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 16
-        player.Character.Humanoid.JumpPower = 50
-    end
-    workspace.CurrentCamera.FieldOfView = 70
-    Lighting.Brightness = 1
-    Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    Lighting.TimeOfDay = "12:00:00"
-    _G = {}
-    print("All settings reset!")
-end)
-settingsY = settingsY + 48
-
--- Save/Load config
-createButton(settingsTab, "Save Current Config", settingsY, function()
-    -- Save config to datastore (local only)
-    local config = {
-        gravity = workspace.Gravity,
-        walkspeed = player.Character and player.Character.Humanoid and player.Character.Humanoid.WalkSpeed or 16,
-        fov = workspace.CurrentCamera.FieldOfView,
-        theme = "Dark"
-    }
-    _G.savedConfig = config
-    print("Config saved!")
-end)
-settingsY = settingsY + 48
-
-createButton(settingsTab, "Load Last Config", settingsY, function()
-    if _G.savedConfig then
-        workspace.Gravity = _G.savedConfig.gravity
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = _G.savedConfig.walkspeed
-        end
-        workspace.CurrentCamera.FieldOfView = _G.savedConfig.fov
-        print("Config loaded!")
-    end
-end)
-settingsY = settingsY + 48
-
--- More settings
-local settingsFeatures = {
-    "Open on Startup", "Minimize on Escape", "Close on Escape", "Show Notifications",
-    "Sound Effects", "Animation Speed", "Smooth UI Animation", "Blur Intensity",
-    "Compact Mode", "Mobile Support", "DPI Scaling", "Font Size"
+/* Arrow indicator */
+.sb-tog-arrow {
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:var(--t3); pointer-events:none;
+  transition:transform .28s, opacity .2s;
 }
+#sb.col .sb-tog-arrow { transform:translateY(-50%) rotate(180deg); }
 
-for _, feat in ipairs(settingsFeatures) do
-    createToggle(settingsTab, feat, settingsY, function(val) end)
-    settingsY = settingsY + 48
-end
-
--- Update canvas size after Part 3
-updateCanvas()
--- Part 4/5: Admin, Fun, Exploit, Utility Tabs
--- Continuing from Part 3, adding more tabs with features.
-
--- ==================== ADMIN TAB (60+ features) ====================
-local adminSection = createSection(adminTab, "Admin Commands", adminY)
-adminY = adminY + 45
-
--- Ban player (requires server-side, visual only)
-createButton(adminTab, "Ban Player (Visual)", adminY, function() end)
-adminY = adminY + 48
-
--- Kick player
-createButton(adminTab, "Kick Player", adminY, function() end)
-adminY = adminY + 48
-
--- Mute player
-createButton(adminTab, "Mute Player", adminY, function() end)
-adminY = adminY + 48
-
--- Freeze player
-createButton(adminTab, "Freeze Player", adminY, function() end)
-adminY = adminY + 48
-
--- Jail player
-createButton(adminTab, "Jail Player", adminY, function() end)
-adminY = adminY + 48
-
--- Kill player
-createButton(adminTab, "Kill Player", adminY, function() end)
-adminY = adminY + 48
-
--- Teleport to player
-createButton(adminTab, "Teleport to Player", adminY, function() end)
-adminY = adminY + 48
-
--- Bring player
-createButton(adminTab, "Bring Player", adminY, function() end)
-adminY = adminY + 48
-
--- Give item
-createButton(adminTab, "Give Item", adminY, function() end)
-adminY = adminY + 48
-
--- Admin chat
-createToggle(adminTab, "Admin Chat", adminY, function(val) end)
-adminY = adminY + 48
-
--- Clear chat
-createButton(adminTab, "Clear Chat", adminY, function()
-    local chat = game:GetService("Chat")
-    if chat and chat:FindFirstChild("ChatWindow") then
-        for _, v in ipairs(chat.ChatWindow:GetChildren()) do
-            if v:IsA("Frame") then v:Destroy() end
-        end
-    end
-end)
-adminY = adminY + 48
-
--- Announce
-createButton(adminTab, "Announce", adminY, function() end)
-adminY = adminY + 48
-
--- Votekick
-createButton(adminTab, "Votekick", adminY, function() end)
-adminY = adminY + 48
-
--- Spectate
-createToggle(adminTab, "Spectate Player", adminY, function(val) end)
-adminY = adminY + 48
-
--- More admin features
-local adminFeatures = {
-    "Slap Player", "Explode Player", "Freeze All", "Kill All", "Mute All",
-    "Clear All Items", "Reset All Stats", "God Mode (All)", "Fly (All)",
-    "Noclip (All)", "Teleport All", "Give All Items", "Clone Player",
-    "Invisible (All)", "No Collision (All)", "Ban Hammer", "Admin GUI"
+/* Logo text — hidden when collapsed */
+.sb-info {
+  flex:1; overflow:hidden; padding:0 4px 0 2px;
+  transition:opacity .2s; min-width:0;
 }
+.sb-info-t { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:900; white-space:nowrap; background:linear-gradient(135deg,var(--acc),var(--acc2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.sb-info-s { font-size:10px; color:var(--t3); white-space:nowrap; margin-top:1px; }
+#sb.col .sb-info { opacity:0; width:0; padding:0; }
 
-for _, feat in ipairs(adminFeatures) do
-    createToggle(adminTab, feat, adminY, function(val) end)
-    adminY = adminY + 48
-end
+/* Nav */
+.sb-nav { flex:1; overflow-y:auto; overflow-x:hidden; padding:10px 8px; display:flex; flex-direction:column; gap:2px; -webkit-overflow-scrolling:touch; }
+.sb-sec { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--t3); padding:10px 8px 3px; white-space:nowrap; flex-shrink:0; }
+#sb.col .sb-sec { display:none; }
 
--- ==================== FUN TAB (80+ features) ====================
-local funSection = createSection(funTab, "Fun & Trolling", funY)
-funY = funY + 45
-
--- Rainbow name
-local rainbowName = false
-createToggle(funTab, "Rainbow Name", funY, function(val)
-    rainbowName = val
-    if val then
-        local rainbowConn
-        rainbowConn = RunService.RenderStepped:Connect(function()
-            if rainbowName and player.Character and player.Character:FindFirstChild("Head") then
-                local hue = tick() % 5 / 5
-                local color = Color3.fromHSV(hue, 1, 1)
-                for _, v in ipairs(player.Character:GetDescendants()) do
-                    if v:IsA("BasePart") and v.Name == "Head" then
-                        v.Color = color
-                    end
-                end
-            end
-        end)
-    end
-end)
-funY = funY + 48
-
--- Dance animation
-createButton(funTab, "Dance Animation", funY, function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        local animId = "rbxassetid://507770000" -- default dance
-        local anim = Instance.new("Animation")
-        anim.AnimationId = animId
-        local track = player.Character.Humanoid:LoadAnimation(anim)
-        track:Play()
-    end
-end)
-funY = funY + 48
-
--- Slap everyone
-createButton(funTab, "Slap Everyone", funY, function()
-    for _, v in ipairs(Players:GetPlayers()) do
-        if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            v.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
-        end
-    end
-end)
-funY = funY + 48
-
--- Confetti rain
-createToggle(funTab, "Confetti Rain", funY, function(val)
-    if val then
-        local confettiConn
-        confettiConn = RunService.RenderStepped:Connect(function()
-            if val then
-                local part = Instance.new("Part")
-                part.Size = Vector3.new(0.2, 0.2, 0.2)
-                part.BrickColor = BrickColor.random()
-                part.Position = Vector3.new(math.random(-50,50), 100, math.random(-50,50))
-                part.Velocity = Vector3.new(0, -20, 0)
-                part.CanCollide = false
-                part.Parent = workspace
-                game:GetService("Debris"):AddItem(part, 3)
-            end
-        end)
-    end
-end)
-funY = funY + 48
-
--- Fireworks
-createButton(funTab, "Fireworks", funY, function()
-    for i = 1, 20 do
-        local fire = Instance.new("Part")
-        fire.Size = Vector3.new(0.5, 0.5, 0.5)
-        fire.Position = player.Character and player.Character:FindFirstChild("Head") and player.Character.Head.Position + Vector3.new(math.random(-5,5), math.random(0,10), math.random(-5,5)) or Vector3.new(0,10,0)
-        fire.Color = Color3.fromHSV(math.random(), 1, 1)
-        fire.Material = Enum.Material.Neon
-        fire.CanCollide = false
-        fire.Parent = workspace
-        game:GetService("Debris"):AddItem(fire, 1)
-    end
-end)
-funY = funY + 48
-
--- Ragdoll mode
-createToggle(funTab, "Ragdoll Mode", funY, function(val)
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.PlatformStand = val
-    end
-end)
-funY = funY + 48
-
--- Big head mode
-createToggle(funTab, "Big Head Mode", funY, function(val)
-    if player.Character and player.Character:FindFirstChild("Head") then
-        player.Character.Head.Size = val and Vector3.new(2,2,2) or Vector3.new(1,1,1)
-    end
-end)
-funY = funY + 48
-
--- Tiny character
-createToggle(funTab, "Tiny Character", funY, function(val)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.Size = val and Vector3.new(0.5,0.5,0.5) or Vector3.new(2,2,1)
-    end
-end)
-funY = funY + 48
-
--- Giant character
-createToggle(funTab, "Giant Character", funY, function(val)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.Size = val and Vector3.new(4,4,2) or Vector3.new(2,2,1)
-    end
-end)
-funY = funY + 48
-
--- Bouncy world
-createToggle(funTab, "Bouncy World", funY, function(val)
-    if val then
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("BasePart") and v ~= player.Character then
-                v.Material = Enum.Material.Neon
-                v.Reflectance = 1
-                v.Elasticity = 1
-            end
-        end
-    end
-end)
-funY = funY + 48
-
--- More fun features
-local funFeatures = {
-    "Slippery Floor", "Infinite Jumps (Fun)", "Teleport on Touch", "Follow Cursor",
-    "Troll GUI", "Fake Ban", "Fake Kick", "Fake Crash", "Screen Shake",
-    "Flashbang Effect", "Reverse Controls", "Inverted Mouse", "Spawn NPC",
-    "Spawn Explosions", "Spawn Fire", "Spawn Rainbows", "Spawn Unicorns"
+.sbtn {
+  display:flex; align-items:center; gap:10px; padding:10px 11px;
+  border-radius:var(--rsm); border:none; background:none;
+  color:var(--t2); font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+  cursor:pointer; width:100%; text-align:left; white-space:nowrap;
+  overflow:hidden; flex-shrink:0; transition:background .15s,color .15s; position:relative;
 }
+.sbtn:hover { background:var(--adim); color:var(--t1); }
+.sbtn.act { background:var(--adim); color:var(--acc); font-weight:600; }
+.sbtn.act::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; border-radius:0 3px 3px 0; background:var(--acc); }
+.sbtn-ico { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+.sbtn-lbl { flex:1; overflow:hidden; text-overflow:ellipsis; }
+.sbtn-cnt { background:var(--acc); color:#fff; font-size:9px; font-weight:700; padding:1px 6px; border-radius:10px; flex-shrink:0; }
+#sb.col .sbtn-lbl, #sb.col .sbtn-cnt { display:none; }
 
-for _, feat in ipairs(funFeatures) do
-    createToggle(funTab, feat, funY, function(val) end)
-    funY = funY + 48
-end
+/* Mobile overlay */
+#sb-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:49; backdrop-filter:blur(3px); }
 
--- ==================== EXPLOIT TAB (60+ features) ====================
-local exploitSection = createSection(exploitTab, "Advanced Exploits", exploitY)
-exploitY = exploitY + 45
+/* ═══════════════════════════════════════
+   MAIN
+═══════════════════════════════════════ */
+#main { flex:1; min-width:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
--- Script executor
-createToggle(exploitTab, "Script Executor", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Dex Explorer
-createButton(exploitTab, "Open Dex Explorer", exploitY, function()
-    -- Dex Explorer would be loaded here
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/..."))()
-end)
-exploitY = exploitY + 48
-
--- Remote Spy
-createToggle(exploitTab, "Remote Spy", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Network Owner
-createToggle(exploitTab, "Network Owner", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Infinite Yield
-createButton(exploitTab, "Load Infinite Yield", exploitY, function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-end)
-exploitY = exploitY + 48
-
--- CMD-X
-createButton(exploitTab, "Load CMD-X", exploitY, function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/source"))()
-end)
-exploitY = exploitY + 48
-
--- Fly GUI V3
-createButton(exploitTab, "Load Fly GUI V3", exploitY, function() end)
-exploitY = exploitY + 48
-
--- Speed Hack
-createToggle(exploitTab, "Speed Hack (All)", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- TP Tool
-createToggle(exploitTab, "Teleport Tool", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Invisible to Players
-createToggle(exploitTab, "Invisible to Players", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Anti-Teleport
-createToggle(exploitTab, "Anti-Teleport", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- Anti-Cheat Bypass
-createToggle(exploitTab, "Anti-Cheat Bypass", exploitY, function(val) end)
-exploitY = exploitY + 48
-
--- More exploit features
-local exploitFeatures = {
-    "Backdoor Finder", "Asset Grabber", "ID Spoofer", "Chat Bypass",
-    "Name Spoofer", "Level Spoofer", "Badge Unlocker", "Item Duplicator",
-    "Cash Hack", "Gems Hack", "Tokens Hack", "Inventory Editor",
-    "WalkSpeed Bypass", "JumpPower Bypass", "Fly Bypass", "Noclip Bypass"
+/* Page header */
+.ph {
+  height:var(--hh); flex-shrink:0; display:flex; align-items:center; gap:12px;
+  padding:0 22px; background:rgba(14,16,24,.97); border-bottom:1px solid var(--bd);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:10;
 }
+.ph-hbg { width:36px; height:36px; border:none; background:var(--s3); border-radius:var(--rsm); color:var(--t2); font-size:18px; cursor:pointer; display:none; align-items:center; justify-content:center; flex-shrink:0; }
+.ph-logo img { width:28px; height:28px; border-radius:7px; object-fit:cover; flex-shrink:0; display:block; }
+.ph-logo .logo-fb { width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg,var(--acc),var(--acc2)); display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-weight:900; font-size:13px; color:#fff; }
+.ph-logo { display:none; }
+.ph-titles { display:flex; flex-direction:column; justify-content:center; }
+.ph-h1 { font-family:'Orbitron',sans-serif; font-size:15px; font-weight:700; white-space:nowrap; line-height:1.2; }
+.ph-sub { font-size:10px; color:var(--t3); white-space:nowrap; }
+.ph-sp { flex:1; }
+.ph-bv { padding:4px 12px; border-radius:20px; font-size:10px; font-weight:700; background:var(--s3); border:1px solid var(--bd); color:var(--t2); white-space:nowrap; }
+.ph-bd { padding:5px 14px; border-radius:20px; font-size:10px; font-weight:700; background:linear-gradient(135deg,#5865f2,#7289da); color:#fff; white-space:nowrap; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.ph-bc { padding:5px 14px; border-radius:20px; font-size:10px; font-weight:700; background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; white-space:nowrap; }
 
-for _, feat in ipairs(exploitFeatures) do
-    createToggle(exploitTab, feat, exploitY, function(val) end)
-    exploitY = exploitY + 48
-end
+/* Page content */
+.pc { flex:1; overflow-y:auto; overflow-x:hidden; padding:22px; -webkit-overflow-scrolling:touch; }
 
--- ==================== UTILITY TAB (80+ features) ====================
-local utilitySection = createSection(utilityTab, "Utility Tools", utilityY)
-utilityY = utilityY + 45
+/* Pages */
+.pg { display:none; flex-direction:column; height:100vh; }
+.pg.on { display:flex; }
 
--- Auto clicker (already in combat, but we add)
-createToggle(utilityTab, "Auto Clicker", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* ═══════════════════════════════════════
+   TOOL & GAME GRIDS
+═══════════════════════════════════════ */
+.tgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; }
+.ggrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:14px; }
 
--- Auto fisher
-createToggle(utilityTab, "Auto Fisher", utilityY, function(val) end)
-utilityY = utilityY + 48
+.tc { background:var(--s2); border:1px solid var(--bd2); border-radius:var(--r); padding:18px 12px; cursor:pointer; text-align:center; transition:all .2s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; align-items:center; gap:7px; user-select:none; }
+.tc:hover { background:var(--s3); border-color:var(--acc); transform:translateY(-3px); box-shadow:0 8px 24px rgba(255,85,32,.15); }
+.tc:active { transform:scale(.97); }
+.tc-i { font-size:28px; line-height:1; }
+.tc-n { font-size:12px; font-weight:600; color:var(--t1); line-height:1.3; }
+.tc-c { font-size:10px; color:var(--t3); }
 
--- Auto farmer
-createToggle(utilityTab, "Auto Farmer", utilityY, function(val) end)
-utilityY = utilityY + 48
+.gc { background:var(--s2); border:1px solid var(--bd2); border-radius:var(--r); padding:20px 12px; cursor:pointer; text-align:center; transition:all .2s; display:flex; flex-direction:column; align-items:center; gap:6px; user-select:none; }
+.gc:hover { background:var(--s3); border-color:var(--acc); transform:translateY(-3px); box-shadow:0 8px 24px rgba(255,85,32,.2); }
+.gc:active { transform:scale(.97); }
+.gc-i { font-size:34px; line-height:1; }
+.gc-n { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; color:var(--t1); line-height:1.3; }
+.gc-d { font-size:10px; color:var(--t3); }
+.gc-p { margin-top:4px; padding:5px 16px; border-radius:20px; font-size:9px; font-weight:700; background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; }
 
--- Auto miner
-createToggle(utilityTab, "Auto Miner", utilityY, function(val) end)
-utilityY = utilityY + 48
+.sh { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--acc); margin:22px 0 12px; display:flex; align-items:center; gap:8px; }
+.sh:first-child { margin-top:0; }
+.sh::after { content:''; flex:1; height:1px; background:var(--bd); }
 
--- Auto alcher
-createToggle(utilityTab, "Auto Alcher", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* ═══════════════════════════════════════
+   HOME PAGE
+═══════════════════════════════════════ */
+.hero { background:linear-gradient(135deg,rgba(255,85,32,.12),rgba(255,140,0,.06),transparent); border:1px solid var(--bd); border-radius:var(--rlg); padding:28px; margin-bottom:18px; position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; top:-50%; right:-10%; width:320px; height:320px; background:radial-gradient(circle,rgba(255,85,32,.1),transparent 70%); pointer-events:none; }
+.hero-in { display:flex; align-items:center; gap:22px; position:relative; flex-wrap:wrap; }
+.hero-img img { width:80px; height:80px; border-radius:18px; object-fit:cover; box-shadow:0 0 32px var(--aglow); flex-shrink:0; }
+.hero-img .logo-fb { width:80px; height:80px; border-radius:18px; background:linear-gradient(135deg,var(--acc),var(--acc2)); display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-weight:900; font-size:36px; color:#fff; box-shadow:0 0 32px var(--aglow); flex-shrink:0; }
+.hero-t h2 { font-family:'Orbitron',sans-serif; font-size:clamp(18px,2.8vw,28px); font-weight:900; background:linear-gradient(135deg,var(--acc),var(--acc2),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; line-height:1.2; }
+.hero-t p { font-size:13px; color:var(--t2); line-height:1.6; margin-bottom:18px; max-width:480px; }
+.hstats { display:flex; gap:24px; flex-wrap:wrap; }
+.hstat .hv { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; color:var(--acc); line-height:1; }
+.hstat .hl { font-size:10px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
 
--- Auto smelter
-createToggle(utilityTab, "Auto Smelter", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* Discord Banner */
+.dban { background:linear-gradient(135deg,rgba(88,101,242,.14),rgba(88,101,242,.05)); border:1px solid rgba(88,101,242,.32); border-radius:var(--r); padding:18px 22px; margin-bottom:18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.dban-i { font-size:32px; flex-shrink:0; }
+.dban-t { flex:1; min-width:180px; }
+.dban-t h3 { font-size:15px; font-weight:700; color:#7289da; margin-bottom:4px; }
+.dban-t p { font-size:12px; color:var(--t3); }
+.dban-btn { padding:11px 24px; background:linear-gradient(135deg,#5865f2,#7289da); color:#fff; border:none; border-radius:var(--rsm); font-family:'Inter',sans-serif; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-block; transition:all .15s; }
+.dban-btn:hover { transform:translateY(-1px); box-shadow:0 4px 18px rgba(88,101,242,.45); }
 
--- Auto crafter
-createToggle(utilityTab, "Auto Crafter", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* Category info grid */
+.igrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:12px; margin-bottom:18px; }
+.icard { background:var(--s2); border:1px solid var(--bd2); border-radius:var(--r); padding:16px; transition:border-color .2s,transform .2s; cursor:default; }
+.icard:hover { border-color:rgba(255,85,32,.35); transform:translateY(-2px); }
+.icard-i { font-size:22px; margin-bottom:8px; }
+.icard-t { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; color:var(--acc2); margin-bottom:5px; }
+.icard-d { font-size:11px; color:var(--t3); line-height:1.5; }
 
--- Auto seller
-createToggle(utilityTab, "Auto Seller", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* News */
+.nbox { background:var(--s2); border:1px solid var(--bd2); border-radius:var(--r); padding:18px 20px; }
+.nbox-t { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--acc); margin-bottom:14px; }
+.ni { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--bd2); }
+.ni:last-child { border:none; padding-bottom:0; }
+.ndot { width:7px; height:7px; border-radius:50%; background:var(--acc); flex-shrink:0; margin-top:5px; }
+.ntxt { font-size:12px; line-height:1.5; }
+.ndate { font-size:9px; color:var(--t3); margin-top:2px; }
 
--- Auto buyer
-createToggle(utilityTab, "Auto Buyer", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* ═══════════════════════════════════════
+   MODAL
+═══════════════════════════════════════ */
+#mod-ov { position:fixed; inset:0; background:rgba(7,9,15,.9); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); z-index:200; display:none; align-items:center; justify-content:center; padding:12px; }
+#mod-ov.on { display:flex; }
+#mod-box { background:var(--s1); border:1px solid var(--bd); border-radius:var(--rlg); width:min(590px,100%); max-height:92vh; display:flex; flex-direction:column; overflow:hidden; animation:mop .2s cubic-bezier(.4,0,.2,1); box-shadow:0 24px 64px rgba(0,0,0,.7); }
+@keyframes mop { from{opacity:0;transform:scale(.93) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.mhd { display:flex; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px solid var(--bd); flex-shrink:0; }
+.mhd-i { font-size:20px; flex-shrink:0; }
+.mhd-t { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; flex:1; }
+.mcls { width:30px; height:30px; border-radius:7px; border:none; background:var(--s3); color:var(--t3); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
+.mcls:hover { background:rgba(255,68,85,.2); color:var(--red); }
+.mbody { padding:18px; overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; }
 
--- Auto trader
-createToggle(utilityTab, "Auto Trader", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* Form elements */
+.fg { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+.fl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--t3); }
+.fi,.fta,.fsel { width:100%; padding:9px 12px; background:var(--s3); border:1px solid var(--bd2); border-radius:var(--rsm); color:var(--t1); font-family:'Inter',sans-serif; font-size:13px; outline:none; transition:border-color .15s; -webkit-appearance:none; }
+.fi:focus,.fta:focus,.fsel:focus { border-color:var(--acc); }
+.fta { resize:vertical; min-height:80px; }
+.fi.mono,.fta.mono { font-family:'Courier New',Courier,monospace; font-size:12px; }
+.fr { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+.fr .fi,.fr .fsel { flex:1; min-width:60px; }
+.fhint { font-size:10px; color:var(--t3); line-height:1.4; margin-top:3px; }
+.fdiv { border:none; border-top:1px solid var(--bd2); margin:14px 0; }
 
--- Auto looter
-createToggle(utilityTab, "Auto Looter", utilityY, function(val) end)
-utilityY = utilityY + 48
+.btn { padding:9px 18px; border-radius:var(--rsm); border:none; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; transition:all .15s; white-space:nowrap; display:inline-block; }
+.btn:active { transform:scale(.97); }
+.btn-p { background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; box-shadow:0 2px 10px rgba(255,85,32,.25); }
+.btn-p:hover { box-shadow:0 4px 18px rgba(255,85,32,.4); transform:translateY(-1px); }
+.btn-s { background:var(--s3); color:var(--t2); border:1px solid var(--bd2); }
+.btn-s:hover { background:var(--s4); color:var(--t1); }
+.btn-sm { padding:6px 12px; font-size:11px; }
+.bg { display:flex; gap:7px; flex-wrap:wrap; margin:8px 0; }
 
--- Auto healer
-createToggle(utilityTab, "Auto Healer", utilityY, function(val) end)
-utilityY = utilityY + 48
+.out { background:var(--s3); border:1px solid var(--bd2); border-radius:var(--rsm); padding:10px 12px; font-size:13px; font-weight:600; color:var(--acc2); white-space:pre-wrap; word-break:break-all; line-height:1.6; min-height:36px; }
+.out.mono { font-family:'Courier New',Courier,monospace; font-size:11px; }
+.out.big { font-family:'Orbitron',sans-serif; font-size:28px; text-align:center; color:var(--acc); }
+.cpre { background:var(--s3); border:1px solid var(--bd2); border-radius:var(--rsm); padding:10px 12px; font-family:'Courier New',Courier,monospace; font-size:11px; line-height:1.6; overflow-x:auto; white-space:pre; max-height:200px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
--- Auto potion
-createToggle(utilityTab, "Auto Potion", utilityY, function(val) end)
-utilityY = utilityY + 48
+/* ═══════════════════════════════════════
+   GAME OVERLAY
+═══════════════════════════════════════ */
+#gmod { position:fixed; inset:0; background:rgba(7,9,15,.97); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); z-index:300; display:none; flex-direction:column; align-items:center; justify-content:flex-start; padding:12px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+#gmod.on { display:flex; }
+.ghd { display:flex; align-items:center; gap:10px; width:100%; max-width:540px; margin-bottom:8px; flex-shrink:0; }
+.g-ico { font-size:22px; }
+.g-ttl { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; flex:1; }
+.gcls { width:34px; height:34px; border-radius:8px; border:none; background:var(--s3); color:var(--t3); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.gcls:hover { background:rgba(255,68,85,.2); color:var(--red); }
+#gsc { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700; color:var(--acc); margin-bottom:8px; text-align:center; min-height:24px; flex-shrink:0; }
+#gcv { border-radius:12px; border:1px solid var(--bd); display:block; touch-action:none; flex-shrink:0; max-width:100%; }
+#gdom { width:100%; max-width:540px; flex-shrink:0; }
+#gov { display:none; text-align:center; padding:10px; flex-shrink:0; }
+#govt { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:900; margin-bottom:5px; }
+#govs { font-size:13px; color:var(--t2); }
+#gbtns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px; flex-shrink:0; }
+.gbtn { padding:11px 26px; border-radius:10px; border:none; cursor:pointer; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; transition:all .15s; }
+.gbtn:active { transform:scale(.96); }
+.gbtn-s { background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; }
+.gbtn-s:hover { box-shadow:0 4px 18px var(--aglow); transform:translateY(-1px); }
+.gbtn-r { background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff; display:none; }
+.gbtn-c { background:var(--s3); color:var(--t2); }
 
--- Auto equip
-createToggle(utilityTab, "Auto Equip (Best Gear)", utilityY, function(val) end)
-utilityY = utilityY + 48
-
--- More utility features
-local utilityFeatures = {
-    "Auto Drop (Items)", "Auto Collect (Resources)", "Auto Salvage", "Auto Enchant",
-    "Auto Repair", "Auto Upgrade", "Auto Quest Turn-in", "Auto Dialogue",
-    "Auto Next Round", "Auto Vote", "Auto Skip", "Auto Accept",
-    "Auto Requeue", "Auto Join", "Auto Reconnect", "Auto Rebirth",
-    "Auto Prestige", "Auto Level", "Auto Skill", "Auto Ability"
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width:768px) {
+  #sb { position:fixed; left:0; top:0; height:100vh; z-index:100; transform:translateX(-100%); width:270px !important; transition:transform .25s cubic-bezier(.4,0,.2,1); }
+  #sb.mob-open { transform:translateX(0); }
+  #sb-ov.on { display:block; }
+  #sb .sb-info { opacity:1 !important; width:auto !important; padding:0 4px 0 2px !important; }
+  #sb .sbtn-lbl { display:block !important; }
+  #sb .sbtn-cnt { display:inline-block !important; }
+  #sb .sb-sec { display:block !important; }
+  .sb-tog-arrow { display:none !important; }
+  .ph-hbg { display:flex !important; }
+  .ph-logo { display:block !important; }
+  .pc { padding:12px; }
+  .tgrid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:9px; }
+  .ggrid { grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:10px; }
+  .igrid { grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); }
+  #mod-box { max-height:95vh; }
+  .mbody { padding:14px; }
+  .hero-img img, .hero-img .logo-fb { width:60px; height:60px; font-size:28px; border-radius:14px; }
 }
-
-for _, feat in ipairs(utilityFeatures) do
-    createToggle(utilityTab, feat, utilityY, function(val) end)
-    utilityY = utilityY + 48
-end
-
--- Final canvas update
-local maxY = math.max(movementY, combatY, visualY, playerY, worldY, miscY, settingsY, adminY, funY, exploitY, utilityY)
-contentContainer.CanvasSize = UDim2.new(0, 0, 0, maxY + 100)
-
--- Initialize first tab
-if tabs[1] then
-    tabs[1].btn.BackgroundTransparency = 0
-    tabs[1].btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tabs[1].content.Visible = true
-end
-
-print("Universal Script loaded with 500+ features across 10 tabs!")
--- ==================== KEYBIND SYSTEM ====================
-local keybinds = {}
-local function bindKey(featureName, keyCode, callback)
-    keybinds[featureName] = {key = keyCode, callback = callback}
-end
-
-local function unbindKey(featureName)
-    keybinds[featureName] = nil
-end
-
--- Simple function to find a toggle by name (stub – you can expand as needed)
-local function findToggle(toggleName)
-    -- This is a placeholder; you could store references to all toggles in a table.
-    return function() end
-end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if not _G.keybindsEnabled then return end
-    
-    for _, bind in pairs(keybinds) do
-        if input.KeyCode == bind.key then
-            bind.callback()
-        end
-    end
-end)
-
--- ==================== NOTIFICATION SYSTEM ====================
-local function notify(title, message, duration)
-    duration = duration or 3
-    local notifFrame = Instance.new("Frame")
-    notifFrame.Size = UDim2.new(0, 300, 0, 60)
-    notifFrame.Position = UDim2.new(1, -320, 0, 10)
-    notifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    notifFrame.BackgroundTransparency = 0.1
-    notifFrame.BorderSizePixel = 0
-    notifFrame.Parent = gui
-    
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.CornerRadius = UDim.new(0, 8)
-    notifCorner.Parent = notifFrame
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -10, 0, 25)
-    titleLabel.Position = UDim2.new(0, 5, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 14
-    titleLabel.Parent = notifFrame
-    
-    local msgLabel = Instance.new("TextLabel")
-    msgLabel.Size = UDim2.new(1, -10, 0, 30)
-    msgLabel.Position = UDim2.new(0, 5, 0, 25)
-    msgLabel.BackgroundTransparency = 1
-    msgLabel.Text = message
-    msgLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    msgLabel.TextXAlignment = Enum.TextXAlignment.Left
-    msgLabel.Font = Enum.Font.Gotham
-    msgLabel.TextSize = 12
-    msgLabel.Parent = notifFrame
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 20, 0, 20)
-    closeBtn.Position = UDim2.new(1, -25, 0, 5)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 12
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = notifFrame
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 4)
-    closeCorner.Parent = closeBtn
-    
-    closeBtn.MouseButton1Click:Connect(function()
-        notifFrame:Destroy()
-    end)
-    
-    game:GetService("Debris"):AddItem(notifFrame, duration)
-end
-
--- ==================== FEATURE COUNTER ====================
-local function countFeatures()
-    local count = 0
-    for _, tab in ipairs(tabs) do
-        local content = tab.content
-        for _, child in ipairs(content:GetDescendants()) do
-            if child:IsA("TextButton") and child.Parent ~= content then
-                count = count + 1
-            elseif child:IsA("TextLabel") and child.Text:match(":") then
-                count = count + 1
-            end
-        end
-    end
-    return count
-end
-
-titleText.Text = "Universal Script | " .. countFeatures() .. " Features"
-
--- ==================== ADDITIONAL FEATURES (to reach 500+) ====================
--- Add more features to each tab to ensure total > 500
-
--- Movement tab extras
-local moveExtras = {
-    "Auto Jump over Obstacles", "Magnet Feet", "Dash Cooldown Bypass",
-    "Infinite Roll", "Slide Boost", "Wall Hop", "Air Dash", "Double Jump Reset",
-    "No Stagger", "Knockback Immunity", "Sticky Walls", "Ice Skating"
+@media (max-width:420px) {
+  .tgrid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .ggrid { grid-template-columns:repeat(2,1fr); gap:9px; }
+  .tc { padding:14px 8px; }
+  .tc-i { font-size:24px; }
+  .gc { padding:16px 8px; }
+  .gc-i { font-size:28px; }
 }
-for _, feat in ipairs(moveExtras) do
-    createToggle(movementTab, feat, movementY, function(val) end)
-    movementY = movementY + 48
-end
-
--- Combat tab extras
-local combatExtras = {
-    "Auto Potion (Combat)", "Auto Eat", "Auto Shield", "Auto Reflect",
-    "Damage Absorption", "Life Steal", "Mana Steal", "Poison Attack",
-    "Fire Attack", "Ice Attack", "Lightning Attack", "Explosive Arrows"
+@media (min-width:1400px) {
+  .tgrid { grid-template-columns:repeat(auto-fill,minmax(162px,1fr)); }
+  .ggrid { grid-template-columns:repeat(auto-fill,minmax(178px,1fr)); }
+  .igrid { grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); }
 }
-for _, feat in ipairs(combatExtras) do
-    createToggle(combatTab, feat, combatY, function(val) end)
-    combatY = combatY + 48
-end
+</style>
+</head>
+<body>
+<div id="app">
 
--- Visual tab extras
-local visualExtras = {
-    "Name Tag Customizer", "Health Bar Style", "3D Box ESP", "2D Radar",
-    "Minimap", "Arrow Indicator", "Distance Indicator", "Player Count",
-    "FPS Graph", "Latency Display", "Memory Usage", "Time Display"
+<!-- ════════════════ SIDEBAR ════════════════ -->
+<nav id="sb">
+  <!-- Toggle button is the FULL top area — click anywhere to toggle -->
+  <div class="sb-top">
+    <button class="sb-tog" onclick="toggleSB()" title="Toggle sidebar">
+      <div class="sb-tog-logo">
+        <img id="logo-img" src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none';document.getElementById('logo-fb-sb').style.display='flex'" alt="FH">
+        <div class="logo-fb" id="logo-fb-sb" style="display:none">F</div>
+      </div>
+      <div class="sb-tog-arrow" id="sb-arrow">▶</div>
+    </button>
+    <div class="sb-info">
+      <div class="sb-info-t">FOCUS HUB</div>
+      <div class="sb-info-s">v1.0 — by Zaeem</div>
+    </div>
+  </div>
+
+  <div class="sb-nav">
+    <div class="sb-sec">MAIN</div>
+    <button class="sbtn act" onclick="goPage('home',this)"><span class="sbtn-ico">🏠</span><span class="sbtn-lbl">Home</span></button>
+
+    <div class="sb-sec">UTILITIES</div>
+    <button class="sbtn" onclick="goPage('math',this)"><span class="sbtn-ico">🔢</span><span class="sbtn-lbl">Math &amp; Numbers</span><span class="sbtn-cnt">20</span></button>
+    <button class="sbtn" onclick="goPage('text',this)"><span class="sbtn-ico">📝</span><span class="sbtn-lbl">Text Tools</span><span class="sbtn-cnt">20</span></button>
+    <button class="sbtn" onclick="goPage('convert',this)"><span class="sbtn-ico">🔄</span><span class="sbtn-lbl">Converters</span><span class="sbtn-cnt">20</span></button>
+    <button class="sbtn" onclick="goPage('gen',this)"><span class="sbtn-ico">⚡</span><span class="sbtn-lbl">Generators</span><span class="sbtn-cnt">20</span></button>
+    <button class="sbtn" onclick="goPage('time',this)"><span class="sbtn-ico">⏱</span><span class="sbtn-lbl">Time &amp; Productivity</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('encode',this)"><span class="sbtn-ico">🔐</span><span class="sbtn-lbl">Encode &amp; Crypto</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('health',this)"><span class="sbtn-ico">💪</span><span class="sbtn-lbl">Health &amp; Fitness</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('finance',this)"><span class="sbtn-ico">💰</span><span class="sbtn-lbl">Finance</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('science',this)"><span class="sbtn-ico">🔬</span><span class="sbtn-lbl">Science &amp; Physics</span><span class="sbtn-cnt">15</span></button>
+
+    <div class="sb-sec">DEVELOPER</div>
+    <button class="sbtn" onclick="goPage('code',this)"><span class="sbtn-ico">💻</span><span class="sbtn-lbl">Coding Tools</span><span class="sbtn-cnt">20</span></button>
+    <button class="sbtn" onclick="goPage('design',this)"><span class="sbtn-ico">🎨</span><span class="sbtn-lbl">Design Tools</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('files',this)"><span class="sbtn-ico">📁</span><span class="sbtn-lbl">File Tools</span><span class="sbtn-cnt">15</span></button>
+
+    <div class="sb-sec">COMMUNITY</div>
+    <button class="sbtn" onclick="goPage('discord',this)"><span class="sbtn-ico">💬</span><span class="sbtn-lbl">Discord Tools</span><span class="sbtn-cnt">15</span></button>
+    <button class="sbtn" onclick="goPage('roblox',this)"><span class="sbtn-ico">🎮</span><span class="sbtn-lbl">Roblox Tools</span><span class="sbtn-cnt">15</span></button>
+
+    <div class="sb-sec">GAMES</div>
+    <button class="sbtn" onclick="goPage('games',this)"><span class="sbtn-ico">🕹️</span><span class="sbtn-lbl">Games</span><span class="sbtn-cnt">100</span></button>
+  </div>
+</nav>
+<div id="sb-ov" onclick="closeMobSB()"></div>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<div id="main">
+
+<!-- HOME -->
+<div class="pg on" id="pg-home">
+  <div class="ph">
+    <button class="ph-hbg" onclick="openMobSB()">☰</button>
+    <div class="ph-logo">
+      <img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none';document.getElementById('ph-fb').style.display='flex'" alt="">
+      <div class="logo-fb" id="ph-fb" style="display:none">F</div>
+    </div>
+    <div class="ph-titles">
+      <div class="ph-h1">Focus Hub</div>
+      <div class="ph-sub">All-in-one toolkit by Zaeem</div>
+    </div>
+    <div class="ph-sp"></div>
+    <span class="ph-bv">v1.0</span>
+    <a href="https://discord.gg/n6FE92EDVU" target="_blank" class="ph-bd">💬 Discord</a>
+  </div>
+  <div class="pc">
+    <div class="hero">
+      <div class="hero-in">
+        <div class="hero-img">
+          <img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none';document.getElementById('hero-fb').style.display='flex'" alt="Focus Hub">
+          <div class="logo-fb" id="hero-fb" style="display:none">F</div>
+        </div>
+        <div class="hero-t">
+          <h2>Welcome to Focus Hub</h2>
+          <p>The most powerful browser toolkit ever built. 250+ utilities, 100 games, Discord tools, Roblox tools — 100% free, no login, works on every device.</p>
+          <div class="hstats">
+            <div class="hstat"><div class="hv">250+</div><div class="hl">Utilities</div></div>
+            <div class="hstat"><div class="hv">100</div><div class="hl">Games</div></div>
+            <div class="hstat"><div class="hv">14</div><div class="hl">Categories</div></div>
+            <div class="hstat"><div class="hv">Free</div><div class="hl">Forever</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dban">
+      <div class="dban-i">💬</div>
+      <div class="dban-t">
+        <h3>Join the Focus Hub Discord Server</h3>
+        <p>Get updates, suggest features, and connect with the community — discord.gg/n6FE92EDVU</p>
+      </div>
+      <a href="https://discord.gg/n6FE92EDVU" target="_blank" class="dban-btn">Join Server →</a>
+    </div>
+
+    <div class="sh">📦 All Categories</div>
+    <div class="igrid">
+      <div class="icard"><div class="icard-i">🔢</div><div class="icard-t">Math &amp; Numbers</div><div class="icard-d">Calculator, BMI, prime checker, Fibonacci, loan, geometry and more</div></div>
+      <div class="icard"><div class="icard-i">📝</div><div class="icard-t">Text Tools</div><div class="icard-d">Word counter, case converter, diff checker, to-do list and more</div></div>
+      <div class="icard"><div class="icard-i">🔄</div><div class="icard-t">Converters</div><div class="icard-d">Temperature, length, weight, speed, currency, data size and more</div></div>
+      <div class="icard"><div class="icard-i">⚡</div><div class="icard-t">Generators</div><div class="icard-d">Password, UUID, Lorem Ipsum, color palette, QR code and more</div></div>
+      <div class="icard"><div class="icard-i">⏱</div><div class="icard-t">Time &amp; Productivity</div><div class="icard-d">Stopwatch, Pomodoro, habit tracker, world clock, alarm and more</div></div>
+      <div class="icard"><div class="icard-i">🔐</div><div class="icard-t">Encode &amp; Crypto</div><div class="icard-d">Base64, binary, Morse code, Caesar cipher, ROT13 and more</div></div>
+      <div class="icard"><div class="icard-i">💪</div><div class="icard-t">Health &amp; Fitness</div><div class="icard-d">TDEE, heart rate zones, macros, BMI, sleep calculator and more</div></div>
+      <div class="icard"><div class="icard-i">💰</div><div class="icard-t">Finance</div><div class="icard-d">Compound interest, mortgage, tax, salary, ROI and more</div></div>
+      <div class="icard"><div class="icard-i">🔬</div><div class="icard-t">Science &amp; Physics</div><div class="icard-d">Ohm's law, kinematics, periodic table, unit analysis and more</div></div>
+      <div class="icard"><div class="icard-i">💻</div><div class="icard-t">Coding Tools</div><div class="icard-d">JSON formatter, regex tester, JWT decoder, diff checker and more</div></div>
+      <div class="icard"><div class="icard-i">🎨</div><div class="icard-t">Design Tools</div><div class="icard-d">Color picker, gradient maker, shadow generator, contrast and more</div></div>
+      <div class="icard"><div class="icard-i">📁</div><div class="icard-t">File Tools</div><div class="icard-d">Text reader, CSV viewer, image info, file compressor and more</div></div>
+      <div class="icard"><div class="icard-i">💬</div><div class="icard-t">Discord Tools</div><div class="icard-d">Timestamp gen, embed builder, role picker, snowflake decoder</div></div>
+      <div class="icard"><div class="icard-i">🎮</div><div class="icard-t">Roblox Tools</div><div class="icard-d">BrickColor, CFrame helper, Lua formatter, API snippets and more</div></div>
+      <div class="icard"><div class="icard-i">🕹️</div><div class="icard-t">100 Games</div><div class="icard-d">Snake, 2048, Breakout, Flappy Bird, Wordle, Chess and 94 more</div></div>
+    </div>
+
+    <div class="sh">📡 Release Notes</div>
+    <div class="nbox">
+      <div class="nbox-t">🚀 FOCUS HUB v1.0 — OFFICIAL RELEASE</div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">🚀 v1.0 Launch — 250+ utilities and 100 games all working with no errors</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">💬 Discord Tools — timestamps, embed builder, role colors, snowflake decoder</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">🎮 Roblox Tools — BrickColor, CFrame, Lua formatter, API snippets, constants</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">🔬 New: Science &amp; Physics — Ohm's law, kinematics, periodic table and more</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">🕹️ 100 working games — every game has ▶ START and 🔁 RETRY buttons</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">📱 Full mobile + tablet + desktop — all devices fully supported</div><div class="ndate">v1.0</div></div></div>
+      <div class="ni"><div class="ndot"></div><div><div class="ntxt">🆓 100% free forever — no ads, no accounts, no tracking, no limits</div><div class="ndate">Always</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL SECTION PAGES -->
+<div class="pg" id="pg-math">   <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Math &amp; Numbers</div><div class="ph-sub">20 calculation tools</div></div><div class="ph-sp"></div><span class="ph-bc">20 Tools</span></div><div class="pc"><div class="tgrid" id="g-math"></div></div></div>
+<div class="pg" id="pg-text">   <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Text Tools</div><div class="ph-sub">20 text utilities</div></div><div class="ph-sp"></div><span class="ph-bc">20 Tools</span></div><div class="pc"><div class="tgrid" id="g-text"></div></div></div>
+<div class="pg" id="pg-convert"><div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Converters</div><div class="ph-sub">20 unit converters</div></div><div class="ph-sp"></div><span class="ph-bc">20 Tools</span></div><div class="pc"><div class="tgrid" id="g-convert"></div></div></div>
+<div class="pg" id="pg-gen">    <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Generators</div><div class="ph-sub">20 generators</div></div><div class="ph-sp"></div><span class="ph-bc">20 Tools</span></div><div class="pc"><div class="tgrid" id="g-gen"></div></div></div>
+<div class="pg" id="pg-time">   <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Time &amp; Productivity</div><div class="ph-sub">15 productivity tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-time"></div></div></div>
+<div class="pg" id="pg-encode"> <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Encode &amp; Crypto</div><div class="ph-sub">15 encoding tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-encode"></div></div></div>
+<div class="pg" id="pg-health"> <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Health &amp; Fitness</div><div class="ph-sub">15 health tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-health"></div></div></div>
+<div class="pg" id="pg-finance"><div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Finance</div><div class="ph-sub">15 financial tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-finance"></div></div></div>
+<div class="pg" id="pg-science"><div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Science &amp; Physics</div><div class="ph-sub">15 science tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-science"></div></div></div>
+<div class="pg" id="pg-code">   <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Coding Tools</div><div class="ph-sub">20 developer tools</div></div><div class="ph-sp"></div><span class="ph-bc">20 Tools</span></div><div class="pc"><div class="tgrid" id="g-code"></div></div></div>
+<div class="pg" id="pg-design"> <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Design Tools</div><div class="ph-sub">15 design tools</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-design"></div></div></div>
+<div class="pg" id="pg-files">  <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">File Tools</div><div class="ph-sub">15 file utilities</div></div><div class="ph-sp"></div><span class="ph-bc">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-files"></div></div></div>
+<div class="pg" id="pg-discord"><div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Discord Tools</div><div class="ph-sub">15 Discord utilities</div></div><div class="ph-sp"></div><span class="ph-bd" style="padding:5px 14px;border-radius:20px;font-size:10px;font-weight:700;background:linear-gradient(135deg,#5865f2,#7289da);color:#fff;white-space:nowrap;">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-discord"></div></div></div>
+<div class="pg" id="pg-roblox"> <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Roblox Tools</div><div class="ph-sub">15 Roblox utilities</div></div><div class="ph-sp"></div><span class="ph-bc" style="background:linear-gradient(135deg,#e2231a,#ff6b6b)">15 Tools</span></div><div class="pc"><div class="tgrid" id="g-roblox"></div></div></div>
+<div class="pg" id="pg-games">  <div class="ph"><button class="ph-hbg" onclick="openMobSB()">☰</button><div class="ph-logo"><img src="https://i.imgur.com/KxtzMhw.png" onerror="this.style.display='none'" alt=""><div class="logo-fb" style="display:none">F</div></div><div class="ph-titles"><div class="ph-h1">Games</div><div class="ph-sub">100 games — all have ▶ Start &amp; 🔁 Retry</div></div><div class="ph-sp"></div><span class="ph-bc">100 Games</span></div><div class="pc"><div class="ggrid" id="g-games"></div></div></div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div id="mod-ov" onclick="if(event.target===this)closeMod()">
+  <div id="mod-box">
+    <div class="mhd"><span class="mhd-i" id="mod-ico"></span><h2 class="mhd-t" id="mod-tit">Tool</h2><button class="mcls" onclick="closeMod()">✕</button></div>
+    <div class="mbody" id="mod-body"></div>
+  </div>
+</div>
+
+<!-- GAME OVERLAY -->
+<div id="gmod">
+  <div class="ghd"><span class="g-ico" id="g-ico"></span><div class="g-ttl" id="g-ttl">Game</div><button class="gcls" onclick="closeGame()">✕</button></div>
+  <div id="gsc">—</div>
+  <canvas id="gcv" style="display:none"></canvas>
+  <div id="gdom"></div>
+  <div id="gov"><div id="govt"></div><div id="govs"></div></div>
+  <div id="gbtns">
+    <button class="gbtn gbtn-s" id="gbstart" onclick="startGame()">▶ START</button>
+    <button class="gbtn gbtn-r" id="gbretry" onclick="retryGame()">🔁 RETRY</button>
+    <button class="gbtn gbtn-c" onclick="closeGame()">✕ CLOSE</button>
+  </div>
+</div>
+
+<script>
+// ════════ NAVIGATION ════════
+window.goPage = function(id, btn) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  const pg = document.getElementById('pg-' + id);
+  if (pg) { pg.classList.add('on'); const pc = pg.querySelector('.pc'); if (pc) pc.scrollTop = 0; }
+  document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('act'));
+  if (btn) btn.classList.add('act');
+  closeMobSB();
+};
+
+// ════════ SIDEBAR ════════
+let _sbCollapsed = false;
+window.toggleSB = function() {
+  _sbCollapsed = !_sbCollapsed;
+  const sb = document.getElementById('sb');
+  const arrow = document.getElementById('sb-arrow');
+  if (_sbCollapsed) {
+    sb.classList.add('col');
+    arrow.textContent = '▶';
+  } else {
+    sb.classList.remove('col');
+    arrow.textContent = '◀';
+  }
+};
+window.openMobSB = function() {
+  document.getElementById('sb').classList.add('mob-open');
+  document.getElementById('sb-ov').classList.add('on');
+};
+window.closeMobSB = function() {
+  document.getElementById('sb').classList.remove('mob-open');
+  document.getElementById('sb-ov').classList.remove('on');
+};
+
+// ════════ MODAL ════════
+let _MT = [];
+window.openMod = function(ico, title, html, cb) {
+  document.getElementById('mod-ico').textContent = ico;
+  document.getElementById('mod-tit').textContent = title;
+  document.getElementById('mod-body').innerHTML = html;
+  document.getElementById('mod-ov').classList.add('on');
+  if (cb) setTimeout(cb, 60);
+};
+window.closeMod = function() {
+  document.getElementById('mod-ov').classList.remove('on');
+  document.getElementById('mod-body').innerHTML = '';
+  _MT.forEach(t => { clearInterval(t); clearTimeout(t); });
+  _MT = [];
+};
+
+// ════════ HELPERS ════════
+const $ = id => document.getElementById(id);
+const val = id => { const e = $(id); return e ? e.value : ''; };
+const setv = (id, v) => { const e = $(id); if (e) e.value = v; };
+const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+const seth = (id, v) => { const e = $(id); if (e) e.innerHTML = v; };
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+window.cp = function(txt) {
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+  alert('Copied: ' + (txt.length > 80 ? txt.slice(0, 80) + '...' : txt));
+};
+window.addTimer = t => { _MT.push(t); return t; };
+
+// ════════ CARD BUILDERS ════════
+window.mkTool = function(grid, ico, name, cat, fn) {
+  const g = $('g-' + grid); if (!g) return;
+  const d = document.createElement('div'); d.className = 'tc';
+  d.innerHTML = `<div class="tc-i">${ico}</div><div class="tc-n">${name}</div><div class="tc-c">${cat}</div>`;
+  d.onclick = fn; g.appendChild(d);
+};
+window.mkGame = function(ico, name, desc, key) {
+  const g = $('g-games'); if (!g) return;
+  const d = document.createElement('div'); d.className = 'gc';
+  d.innerHTML = `<div class="gc-i">${ico}</div><div class="gc-n">${name}</div><div class="gc-d">${desc}</div><div class="gc-p">▶ PLAY</div>`;
+  d.onclick = () => launchGame(key, ico, name); g.appendChild(d);
+};
+
+// ════════ GAME ENGINE ════════
+let _raf = null, _gName = '', _gStarted = false;
+window.launchGame = function(name, ico, title) {
+  _gName = name; _gStarted = false;
+  $('g-ico').textContent = ico; $('g-ttl').textContent = title;
+  $('gsc').textContent = '—'; $('gov').style.display = 'none';
+  $('gbstart').style.display = 'inline-block'; $('gbretry').style.display = 'none';
+  $('gcv').style.display = 'none'; $('gdom').innerHTML = '';
+  $('gmod').classList.add('on'); cancelAnimationFrame(_raf); _cleanG();
+  const info = window._GI && window._GI[name] || 'Press START to play';
+  $('gdom').innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:12px;max-width:540px;line-height:1.6">${esc(info)}</div>`;
+};
+window.startGame = function() {
+  _gStarted = true; $('gov').style.display = 'none';
+  $('gbstart').style.display = 'none'; $('gbretry').style.display = 'none';
+  cancelAnimationFrame(_raf); _cleanG();
+  $('gdom').innerHTML = ''; $('gcv').style.display = 'none'; runGame(_gName);
+};
+window.retryGame = function() {
+  $('gov').style.display = 'none'; $('gbretry').style.display = 'none';
+  cancelAnimationFrame(_raf); _cleanG();
+  $('gdom').innerHTML = ''; $('gcv').style.display = 'none'; runGame(_gName);
+};
+window.closeGame = function() {
+  $('gmod').classList.remove('on'); cancelAnimationFrame(_raf); _cleanG();
+  $('gdom').innerHTML = ''; $('gcv').style.display = 'none'; _gStarted = false;
+};
+function _cleanG() {
+  if (window._gkd) { document.removeEventListener('keydown', window._gkd); window._gkd = null; }
+  if (window._gku) { document.removeEventListener('keyup', window._gku); window._gku = null; }
+  if (window._giv) { clearInterval(window._giv); window._giv = null; }
+  if (window._giv2) { clearInterval(window._giv2); window._giv2 = null; }
+  if (window._gto) { clearTimeout(window._gto); window._gto = null; }
 }
-for _, feat in ipairs(visualExtras) do
-    createToggle(visualTab, feat, visualY, function(val) end)
-    visualY = visualY + 48
-end
-
--- Player tab extras
-local playerExtras = {
-    "Auto Potion (Player)", "Auto Regen", "Auto Resurrect", "Auto Revive",
-    "No Fall Damage (Player)", "No Fire Damage", "No Poison", "No Drowning",
-    "No Suffocation", "No Radiation", "No Bleed", "No Stun"
-}
-for _, feat in ipairs(playerExtras) do
-    createToggle(playerTab, feat, playerY, function(val) end)
-    playerY = playerY + 48
-end
-
--- World tab extras
-local worldExtras = {
-    "Unanchor All Parts", "Break All Parts", "Melt Ice", "Freeze Water",
-    "Remove Fog", "Remove Clouds", "Remove Atmosphere", "Remove Terrain",
-    "Spawn Meteor", "Spawn Tornado", "Spawn Earthquake", "Spawn Lightning"
-}
-for _, feat in ipairs(worldExtras) do
-    createToggle(worldTab, feat, worldY, function(val) end)
-    worldY = worldY + 48
-end
-
--- Misc tab extras
-local miscExtras = {
-    "Auto Reconnect", "Auto Rejoin on Death", "Auto Respawn", "Auto Skip Cutscene",
-    "Auto Skip Dialogue", "Auto Skip Ads", "Auto Click (GUI)", "Auto Type",
-    "Auto Screenshot", "Auto Record", "Auto Upload", "Auto Backup"
-}
-for _, feat in ipairs(miscExtras) do
-    createToggle(miscTab, feat, miscY, function(val) end)
-    miscY = miscY + 48
-end
-
--- Settings tab extras
-local settingsExtras = {
-    "Auto Save Settings", "Auto Load Settings", "Cloud Sync", "Export Config",
-    "Import Config", "Reset All Binds", "Export Keybinds", "Import Keybinds",
-    "Change Toggle Sound", "Change Notification Sound", "Volume Control"
-}
-for _, feat in ipairs(settingsExtras) do
-    createToggle(settingsTab, feat, settingsY, function(val) end)
-    settingsY = settingsY + 48
-end
-
--- Admin tab extras
-local adminExtras = {
-    "Admin Fly (All)", "Admin Noclip (All)", "Admin Speed (All)", "Admin God Mode (All)",
-    "Admin Invisible (All)", "Admin Kill (All)", "Admin Ban (All)", "Admin Kick (All)",
-    "Admin Mute (All)", "Admin Freeze (All)", "Admin Jail (All)", "Admin Teleport (All)"
-}
-for _, feat in ipairs(adminExtras) do
-    createToggle(adminTab, feat, adminY, function(val) end)
-    adminY = adminY + 48
-end
-
--- Fun tab extras
-local funExtras = {
-    "Spawn Mario", "Spawn Sonic", "Spawn Pikachu", "Spawn Doge",
-    "Rainbow Sky", "Rainbow Floor", "Rainbow Weapons", "Rainbow Pets",
-    "Laser Eyes", "Flaming Hands", "Ice Hands", "Lightning Hands"
-}
-for _, feat in ipairs(funExtras) do
-    createToggle(funTab, feat, funY, function(val) end)
-    funY = funY + 48
-end
-
--- Exploit tab extras
-local exploitExtras = {
-    "Anti-Ban", "Anti-Kick", "Anti-Report", "Anti-AntiCheat",
-    "Exploit Detector", "Exploit Blocker", "Script Injector", "DLL Injector",
-    "Memory Editor", "Value Scanner", "Pointer Scanner", "Code Injector"
-}
-for _, feat in ipairs(exploitExtras) do
-    createToggle(exploitTab, feat, exploitY, function(val) end)
-    exploitY = exploitY + 48
-end
-
--- Utility tab extras
-local utilityExtras = {
-    "Auto Teleport (Waypoints)", "Auto Pathfinding", "Auto Follow", "Auto Attack (NPC)",
-    "Auto Loot (Chests)", "Auto Open (Crates)", "Auto Merge (Items)", "Auto Combine",
-    "Auto Split (Items)", "Auto Stack", "Auto Sort Inventory", "Auto Equip Set"
-}
-for _, feat in ipairs(utilityExtras) do
-    createToggle(utilityTab, feat, utilityY, function(val) end)
-    utilityY = utilityY + 48
-end
-
--- ==================== FINAL CANVAS UPDATE ====================
-local finalMaxY = math.max(
-    movementY, combatY, visualY, playerY, worldY, miscY, settingsY,
-    adminY, funY, exploitY, utilityY
-)
-contentContainer.CanvasSize = UDim2.new(0, 0, 0, finalMaxY + 100)
-
--- ==================== INITIALIZE FIRST TAB ====================
-if tabs[1] then
-    tabs[1].btn.BackgroundTransparency = 0
-    tabs[1].btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tabs[1].content.Visible = true
-end
-
--- ==================== UPDATE TITLE WITH FEATURE COUNT ====================
-local finalCount = countFeatures()
-titleText.Text = "Universal Script | " .. finalCount .. " Features"
-notify("Loaded", finalCount .. " features ready!", 2)
-
--- ==================== CLEANUP ON GUI CLOSE ====================
-closeBtn.MouseButton1Click:Connect(function()
-    blur.Size = 0
-    for _, conn in pairs(activeConnections) do
-        if conn and conn.Disconnect then conn:Disconnect() end
-    end
-    gui:Destroy()
-end)
-
--- ==================== ADD HOVER EFFECTS TO BUTTONS ====================
-local function addHoverEffect(btn)
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = btn.BackgroundTransparency * 0.5}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = btn.BackgroundTransparency}):Play()
-    end)
-end
-
-for _, tab in ipairs(tabs) do
-    addHoverEffect(tab.btn)
-end
-
--- ==================== KEYBIND TOGGLE (optional) ====================
-bindKey("Fly", Enum.KeyCode.F, function()
-    local toggle = findToggle("Fly")
-    if toggle then toggle() end
-end)
-
--- ==================== SCRIPT END ====================
-print("Universal Script fully loaded with " .. finalCount .. " features!")
+window.gameOver = function(title, stats) {
+  cancelAnimationFrame(_raf);
+  $('govt').textContent = title; $('govs').textContent = stats || '';
+  $('gov').style.display = 'block';
+  $('gbretry').style.display = 'inline-block'; $('gbstart').style.display = 'none';
+};
+window.getCV = function(sw, sh) {
+  const cv = $('gcv');
+  const mw = Math.min(sw, window.innerWidth - 24, 520);
+  const cw = mw, ch = Math.round(mw * (sh / sw));
+  cv.width = cw; cv.height = ch; cv.style.display = 'block';
+  return { cv, c: cv.getContext('2d'), w: cw, h: ch, sx: cw/sw, sy: ch/sh };
+};
+window._GI = {};
+window.runGame = function(n) {
+  const m = window._GM || {};
+  if (m[n]) m[n]();
+  else $('gdom').innerHTML = '<div style="color:var(--t3);text-align:center;padding:20px">Load all parts to play.</div>';
+};
+window._GM = {};
+</script>
